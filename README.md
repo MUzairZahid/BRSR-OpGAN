@@ -145,7 +145,7 @@ If you use this code, the pre-trained models or the BRSR dataset, please cite:
 }
 
 @dataset{zahid2026brsr_dataset,
-  title     = {{BRSR} Dataset: Blind Radar Signal Restoration Benchmark (v1.0) for {BRSR-OpGAN}, {CoRe-Net} and {XCoRe-Net}},
+  title     = {{BRSR} Dataset: Blind Radar Signal Restoration Benchmark (v1.0)},
   author    = {Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
   publisher = {Zenodo},
   version   = {1.0},

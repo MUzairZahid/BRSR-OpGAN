@@ -42,7 +42,7 @@ preferred-citation:
   doi: "10.1016/j.neunet.2025.107709"
 references:
   - type: data
-    title: "BRSR Dataset: Blind Radar Signal Restoration Benchmark (v1.0) for BRSR-OpGAN, CoRe-Net and XCoRe-Net"
+    title: "BRSR Dataset: Blind Radar Signal Restoration Benchmark (v1.0)"
     authors:
       - family-names: Zahid
         given-names: Muhammad Uzair
