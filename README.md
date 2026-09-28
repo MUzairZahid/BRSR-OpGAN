@@ -10,8 +10,8 @@ Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 10
 <p align="center">
   <a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_hero_dark.png">
-      <img src="docs/figures/restoration/restoration_hero_light.png" width="960" alt="Restoration Observatory: a radar transmitter, an illustrative reflector, an interferer and receiver noise feed one receiver; the received signal passes through the BRSR-OpGAN-D-2P restorer to the restored output. A panel lists the test row, its target and input SNR, echo delay, interference signal and artifact power fractions, and the restorer card shows the SNR before and after restoration.">
+      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_scene_dark.gif">
+      <img src="docs/figures/restoration/restoration_scene_light.gif" width="900" alt="Animated radar environment for one released LFM test row: the clean pulse, echo, co-channel interference and AWGN reach the receiver in four stages, then the received signal passes through BRSR-OpGAN to the restored output. The paths are illustrative.">
     </picture>
   </a>
 </p>
@@ -22,8 +22,8 @@ A released BRSR test signal, corrupted by its stored echo, co-channel interferen
 <p align="center">
   <a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_compare_dark.png">
-      <img src="docs/figures/restoration/restoration_compare_light.png" width="960" alt="Four matched plots of one LFM test row: clean target, received input, restored output over the dashed clean target, and the residual error of received and restored, each with a spectrogram; the last panel splits received and restored spectrograms at a movable divider.">
+      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_compare_dark.gif">
+      <img src="docs/figures/restoration/restoration_compare_light.gif" width="900" alt="Animated clean, received, restored and residual plots for the same LFM test row as the radar scene: the received input gains echo, interference and noise, then the restored output and its residual appear; input SNR 4.76 dB, restored 22.97 dB after the second pass.">
     </picture>
   </a>
 </p>
@@ -88,7 +88,8 @@ To rebuild the interactive page and the README figures:
 python scripts/export_restoration_samples.py   # test rows + model outputs -> scripts/restoration_samples.npz (needs data + PyTorch)
 python scripts/make_restoration_page.py        # docs/brsr_restoration.html (NumPy only)
 python scripts/make_demo_figures.py            # docs/figures/*_{light,dark}.png (matplotlib)
-python scripts/capture_restoration_page.py     # hero and social-card images (Playwright)
+python scripts/capture_restoration_page.py     # still images and social card (Playwright)
+python scripts/record_restoration_gifs.py      # README animations (Playwright + ffmpeg)
 python -m pytest -q tests                      # checks the embedded data against reference_results/
 ```
 

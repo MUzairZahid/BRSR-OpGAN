@@ -240,10 +240,10 @@ button:disabled{opacity:.45;cursor:default}
 .rx .sym{stroke:var(--ink)}
 .model .ring{fill:var(--surface);stroke:var(--ink2);stroke-width:1.4}
 .model .bar{fill:var(--surface2);stroke:var(--line2);stroke-width:1;transition:fill .3s,stroke .3s}
-.model.lit .bar{fill:color-mix(in srgb,var(--clean) 45%,var(--surface));stroke:var(--clean)}
-.model.running .bar{animation:sweep 1.4s linear 2}
+.model.lit .bar{fill:var(--clean);fill-opacity:.45;stroke:var(--clean)}
+.model.running .bar{fill:var(--clean);stroke:var(--clean);animation:sweep 1.4s linear 2}
 .model .bar:nth-child(2){animation-delay:.1s}.model .bar:nth-child(3){animation-delay:.2s}.model .bar:nth-child(4){animation-delay:.3s}.model .bar:nth-child(5){animation-delay:.4s}.model .bar:nth-child(6){animation-delay:.5s}.model .bar:nth-child(7){animation-delay:.6s}.model .bar:nth-child(8){animation-delay:.7s}.model .bar:nth-child(9){animation-delay:.8s}
-@keyframes sweep{0%,60%{fill:var(--surface2);stroke:var(--line2)}10%,30%{fill:color-mix(in srgb,var(--clean) 70%,var(--surface));stroke:var(--clean)}}
+@keyframes sweep{0%,60%{fill-opacity:.1;stroke-opacity:.35}10%,30%{fill-opacity:.9;stroke-opacity:1}}
 .wire{fill:none;stroke:var(--c);stroke-width:2;stroke-linecap:round;transition:opacity .2s}
 .wire.echo{stroke-dasharray:var(--dash-echo)}.wire.cci{stroke-dasharray:var(--dash-cci)}.wire.awgn{stroke-dasharray:var(--dash-awgn)}
 .wire.rx{stroke-dasharray:5 7}.wire.rest{stroke-dasharray:5 7}
@@ -1004,6 +1004,21 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{drawTime();drawSp
 
 /* ---- animation loop ---- */
 const motionNames=['Clean','Echo','Cci','Noise','Rx','Rest'],lengths={};
+function moveParticles(){
+  const svgs=Array.from(document.querySelectorAll('.scene svg')).filter(s=>s.getClientRects().length);
+  for(const svg of svgs)motionNames.forEach((n,k)=>{
+    try{
+      const path=svg.querySelector('[data-wire="'+n+'"]'),dot=svg.querySelector('[data-particle="'+n+'"]');
+      if(!path||!dot)return;
+      const key=svg.className.baseVal+n,length=lengths[key]||(lengths[key]=path.getTotalLength());
+      const stageStart=STAGE_START[k<4?k:4],local=Math.max(0,state.t-stageStart);
+      const p=path.getPointAtLength(((elapsed*.24+k*.19)%1)*length);
+      dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);
+      const active=k===0||(k<4?state.enabled[k-1]:state.stage>=4),hi=state.inspect==='All'||state.inspect===n||(k>=4&&(state.inspect==='Restored'||state.inspect==='Model'));
+      dot.style.opacity=active&&local>0&&hi?'1':'0';
+    }catch(error){}
+  });
+}
 function frame(now){
   let dt=Math.min(.1,(now-last)/1000);last=now;
   if(state.playing&&!document.hidden){
@@ -1015,22 +1030,7 @@ function frame(now){
       if(next!==state.stage){let t=state.t;setStage(next);state.t=t;}
     }
     progress();
-    if(!reduced.matches&&sceneVisible){
-      elapsed+=dt;
-      const svgs=Array.from(document.querySelectorAll('.scene svg')).filter(s=>s.getClientRects().length);
-      for(const svg of svgs)motionNames.forEach((n,k)=>{
-        try{
-          const path=svg.querySelector('[data-wire="'+n+'"]'),dot=svg.querySelector('[data-particle="'+n+'"]');
-          if(!path||!dot)return;
-          const key=svg.className.baseVal+n,length=lengths[key]||(lengths[key]=path.getTotalLength());
-          const stageStart=STAGE_START[k<4?k:4],local=Math.max(0,state.t-stageStart);
-          const p=path.getPointAtLength(((elapsed*.24+k*.19)%1)*length);
-          dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);
-          const active=k===0||(k<4?state.enabled[k-1]:state.stage>=4),hi=state.inspect==='All'||state.inspect===n||(k>=4&&(state.inspect==='Restored'||state.inspect==='Model'));
-          dot.style.opacity=active&&local>0&&hi?'1':'0';
-        }catch(error){}
-      });
-    }
+    if(!reduced.matches&&sceneVisible){elapsed+=dt;moveParticles();}
   }
   requestAnimationFrame(frame);
 }
@@ -1042,6 +1042,8 @@ if(typeof IntersectionObserver!=='undefined'){
 }else if(state.waiting){state.waiting=false;state.playing=true;update();}
 document.addEventListener('visibilitychange',()=>{last=performance.now();syncPlay();});
 requestAnimationFrame(frame);
+// Deterministic timeline control used by scripts/record_restoration_gifs.py; not part of the UI.
+window.brsrPage={duration:T_END,setTime(t){state.waiting=false;state.playing=false;const s=stageAt(t);if(s!==state.stage)setStage(s);state.t=t;elapsed=t;state.playing=true;document.body.classList.add('motion-running');updateDiagram();moveParticles();progress();$('modeLabel').textContent='GUIDED REVEAL';$('playbackNote').textContent='Playing · repeats automatically. Pause or choose a stage to explore.';$('playText').textContent='Pause';$('playIcon').setAttribute('d','M4 2v10M10 2v10');$('playIcon').setAttribute('fill','none');state.playing=false;},setWaveform(name,sample){state.sample=sample||0;setWaveform(name,false);state.sample=sample||0;setWaveform(name,false);}};
 </script>
 </body>
 </html>
