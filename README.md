@@ -17,7 +17,7 @@ This repository provides:
 - the **BRSR dataset** download (85,800 paired clean/corrupted radar signals, 12 LPI radar waveform classes; hosted on Zenodo);
 - **pre-trained models**: BRSR-OpGAN (time, dual-domain, 2-pass) and CNN-GAN baselines, for both the BRSR and the AWGN-Baseline dataset;
 - **training and evaluation code** that reproduces the paper's results, plus reference results per SNR bin, artifact type and modulation class;
-- the MATLAB **radar signal data generation** code.
+- the **data generator** (MATLAB and Python) lives in its own repository: [BRSR-DataGen](https://github.com/MUzairZahid/BRSR-DataGen).
 
 The same dataset is used by the follow-up works **CoRe-Net** and **XCoRe-Net** (see [Related work](#related-work)).
 
@@ -118,12 +118,12 @@ BRSR-OpGAN/
 ├── scripts/               # make_demo_figures.py: README animation and figures
 ├── pretrained_weights/    # released generators (+ original training logs)
 ├── reference_results/     # test results of the released generators
-├── docs/                  # evaluation protocol, normalization statistics, figures
-└── data_generation/       # MATLAB radar waveform + artifact generator
+└── docs/                  # evaluation protocol, normalization statistics, figures
 ```
 
 ## Related work
 
+- **BRSR-DataGen**: the radar signal dataset generator (MATLAB and Python) used to create the BRSR dataset. [github.com/MUzairZahid/BRSR-DataGen](https://github.com/MUzairZahid/BRSR-DataGen)
 - **CoRe-Net**: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration. *Machine Learning with Applications*, 25, 100939 (2026). [doi:10.1016/j.mlwa.2026.100939](https://doi.org/10.1016/j.mlwa.2026.100939)
 - **XCoRe-Net**: Expert Co-Operational Regressor Networks for High-Fidelity Restoration of Radar Signals.
 
