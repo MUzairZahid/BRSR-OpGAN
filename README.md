@@ -7,6 +7,11 @@
 
 Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 107709) and home of the **BRSR dataset**, the Blind Radar Signal Restoration benchmark. BRSR-OpGAN restores radar signals corrupted by an unknown blend of **additive white Gaussian noise (AWGN)**, **echo** and **co-channel interference (CCI)**. It makes no assumption about the type or severity of the corruption (blind restoration). It is a 1D **Operational GAN** built from **Self-Organized Operational Neural Network (Self-ONN)** layers and trained with a **dual-domain (time + frequency) loss**.
 
+<p align="center">
+  <img src="docs/figures/brsr_restoration_demo.gif" width="860" alt="BRSR-OpGAN restoring LFM and Costas radar signals corrupted by echo, co-channel interference and noise">
+</p>
+<p align="center"><em>Real BRSR test signals (LFM and Costas): echo, co-channel interference and noise are added to the clean waveform, then BRSR-OpGAN-D-2P restores it. Top: I channel; bottom: spectrogram. Signals are min–max normalized, as the network sees them.</em></p>
+
 This repository provides:
 
 - the **BRSR dataset** download (85,800 paired clean/corrupted radar signals, 12 LPI radar waveform classes; hosted on Zenodo);
@@ -59,6 +64,8 @@ python train.py --dataset brsr --Q 3 --first_pass pretrained_weights/brsr/BRSR_O
 python evaluate.py --dataset brsr --checkpoint runs/<run>/generator_best.pth --q 3
 ```
 
+The README animation and figures are made with `python scripts/make_demo_figures.py` (needs `matplotlib` and `ffmpeg`).
+
 Paper settings: Adam, learning rate 5·10⁻⁴, batch size 64, up to 1000 epochs, Q = 3; the model with the best validation SNR is kept.
 
 ## Pre-trained models and results
@@ -85,6 +92,12 @@ Paper settings: Adam, learning rate 5·10⁻⁴, batch size 64, up to 1000 epoch
 | BRSR-OpGAN-T | 1.28 | 6.74 | 12.16 | 16.47 | 19.43 |
 | BRSR-OpGAN-D | 1.22 | 6.68 | 12.11 | 16.47 | 19.49 |
 
+<p align="center"><img src="docs/figures/snr_sweep.png" width="900" alt="One LFM test signal re-scaled to input SNRs from -12 to +6 dB and restored by BRSR-OpGAN"></p>
+<p align="center"><em>One LFM test signal with its own echo + interference + noise mix, re-scaled to different input SNRs and restored by BRSR-OpGAN-D-2P.</em></p>
+
+<p align="center"><img src="docs/figures/two_pass.png" width="900" alt="Received, first-pass and second-pass restoration of a Costas test signal"></p>
+<p align="center"><em>The second restoration pass (BRSR-OpGAN-D-2P) on a Costas test signal.</em></p>
+
 T = time-domain loss, D = dual-domain loss, 2P = second restoration pass. SNR, PSNR and MSE follow the paper's evaluation protocol. \*SI-SDR is an additional blind metric (see below). The BRSR numbers match Tables 2 and 3 of the paper to within 0.04 dB. The AWGN-Baseline checkpoints differ from Table 1 of the paper by at most 0.09 dB.
 
 ## Evaluation protocol
@@ -102,9 +115,10 @@ BRSR-OpGAN/
 ├── train.py               # training (incl. 2nd pass)
 ├── evaluate.py            # evaluation and grouped results
 ├── download_data.py       # BRSR dataset download from Zenodo with checksum check
+├── scripts/               # make_demo_figures.py: README animation and figures
 ├── pretrained_weights/    # released generators (+ original training logs)
 ├── reference_results/     # test results of the released generators
-├── docs/                  # evaluation protocol, normalization statistics
+├── docs/                  # evaluation protocol, normalization statistics, figures
 └── data_generation/       # MATLAB radar waveform + artifact generator
 ```
 
