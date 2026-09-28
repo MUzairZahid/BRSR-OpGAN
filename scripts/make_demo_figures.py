@@ -31,7 +31,8 @@ from data import CLASS_NAMES  # noqa: E402
 from models import ResidualGenerator  # noqa: E402
 
 # Test-split rows used for the figures (all: AWGN + echo + CCI blends)
-ROW_LFM, ROW_COSTAS = 5489, 12771
+# ROW_GIF: the best-restored test signal with all three artifacts at negative input SNR (LFM, -0.1 dB -> 21.1 dB)
+ROW_GIF, ROW_SWEEP, ROW_TWO_PASS = 19903, 5489, 12771
 FS = 100e6
 WIN = slice(0, 128)                        # samples shown in the animation (1.28 us)
 WIN_STATIC = slice(0, 80)                  # samples shown in the static figures (0.8 us)
@@ -147,7 +148,7 @@ def frames_for_sample(d, i, restored, snr_in, snr_out):
                                                 (y, C_RESTORED, 2, "-", "restored")], y
     yield from [(5, f"Restored · SNR {db(snr_out)} dB  (input {db(snr_in)} dB)",
                  [(norm(clean), C_CLEAN, 1.5, (0, (3, 2)), "clean"), (restored, C_RESTORED, 2, "-", "restored")],
-                 restored)] * 16
+                 restored)] * 24
 
 
 def make_gif(d, idxs, restored, snr_in, snr_out, out_path, fps=12):
@@ -268,17 +269,18 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
 
-    d = load_rows(args.test_file, [ROW_LFM, ROW_COSTAS])
+    rows = [ROW_GIF, ROW_SWEEP, ROW_TWO_PASS]
+    d = load_rows(args.test_file, rows)
     models = load_models(args.weights_dir)
     _, restored = run(models, np.stack([norm(x) for x in d["noisy"]]))
-    snr_in = [snr_db(d["noisy"][i], d["clean"][i]) for i in range(2)]
-    snr_out = [snr_db(to_physical(restored[i], d["clean"][i]), d["clean"][i]) for i in range(2)]
-    for i in range(2):
-        print(f"row {[ROW_LFM, ROW_COSTAS][i]}: input {snr_in[i]:.2f} dB -> restored {snr_out[i]:.2f} dB")
+    snr_in = [snr_db(d["noisy"][i], d["clean"][i]) for i in range(len(rows))]
+    snr_out = [snr_db(to_physical(restored[i], d["clean"][i]), d["clean"][i]) for i in range(len(rows))]
+    for i in range(len(rows)):
+        print(f"row {rows[i]}: input {snr_in[i]:.2f} dB -> restored {snr_out[i]:.2f} dB")
 
-    make_gif(d, [0, 1], restored, snr_in, snr_out, os.path.join(args.out_dir, "brsr_restoration_demo.gif"))
-    make_snr_sweep(models, d, 0, os.path.join(args.out_dir, "snr_sweep.png"))
-    make_two_pass(models, d, 1, os.path.join(args.out_dir, "two_pass.png"))
+    make_gif(d, [0], restored, snr_in, snr_out, os.path.join(args.out_dir, "brsr_restoration_demo.gif"))
+    make_snr_sweep(models, d, 1, os.path.join(args.out_dir, "snr_sweep.png"))
+    make_two_pass(models, d, 2, os.path.join(args.out_dir, "two_pass.png"))
     print(f"Saved figures to {args.out_dir}")
 
 

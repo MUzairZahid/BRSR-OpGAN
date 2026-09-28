@@ -8,9 +8,9 @@
 Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 107709) and home of the **BRSR dataset**, the Blind Radar Signal Restoration benchmark. BRSR-OpGAN restores radar signals corrupted by an unknown blend of **additive white Gaussian noise (AWGN)**, **echo** and **co-channel interference (CCI)**. It makes no assumption about the type or severity of the corruption (blind restoration). It is a 1D **Operational GAN** built from **Self-Organized Operational Neural Network (Self-ONN)** layers and trained with a **dual-domain (time + frequency) loss**.
 
 <p align="center">
-  <img src="docs/figures/brsr_restoration_demo.gif" width="860" alt="BRSR-OpGAN restoring LFM and Costas radar signals corrupted by echo, co-channel interference and noise">
+  <img src="docs/figures/brsr_restoration_demo.gif" width="860" alt="BRSR-OpGAN restoring an LFM radar signal corrupted by echo, co-channel interference and noise">
 </p>
-<p align="center"><em>Real BRSR test signals (LFM and Costas): echo, co-channel interference and noise are added to the clean waveform, then BRSR-OpGAN-D-2P restores it. Top: I channel; bottom: spectrogram. Signals are min–max normalized, as the network sees them.</em></p>
+<p align="center"><em>A real BRSR test signal (LFM): echo, co-channel interference and noise are added to the clean waveform, then BRSR-OpGAN-D-2P restores it from −0.1 dB to 21.1 dB SNR. This is one of the best-restored test signals; average results are in the tables below. Top: I channel; bottom: spectrogram. Signals are min–max normalized, as the network sees them.</em></p>
 
 This repository provides:
 
