@@ -1,21 +1,19 @@
-"""Make the README figures: restoration animation (GIF), SNR sweep and one- vs two-pass comparison.
+"""Make the static README figures: SNR sweep and one- vs two-pass comparison.
 
 Uses real BRSR test signals and the released BRSR-OpGAN weights:
 
     python download_data.py --dataset brsr --splits test
     python scripts/make_demo_figures.py
 
-Outputs go to docs/figures/. Requires matplotlib and ffmpeg (for the GIF).
+Outputs go to docs/figures/. Requires matplotlib.
+The README animation is made by make_restoration_page.py and record_restoration_gif.py.
 
 All displayed signals are min-max normalized per channel, i.e. what the network sees.
 SNR values follow the paper's evaluation protocol (docs/EVALUATION_PROTOCOL.md).
 """
 import argparse
 import os
-import shutil
-import subprocess
 import sys
-import tempfile
 
 import h5py
 import matplotlib
@@ -30,11 +28,10 @@ sys.path.insert(0, ROOT)
 from data import CLASS_NAMES  # noqa: E402
 from models import ResidualGenerator  # noqa: E402
 
-# Test-split rows used for the figures (all: AWGN + echo + CCI blends)
-# ROW_GIF: the best-restored test signal with all three artifacts at negative input SNR (LFM, -0.1 dB -> 21.1 dB)
-ROW_GIF, ROW_SWEEP, ROW_TWO_PASS = 19903, 5489, 12771
+# Test-split rows used for the figures (both: AWGN + echo + CCI blends)
+ROW_SWEEP, ROW_TWO_PASS = 5489, 12771
 FS = 100e6
-WIN = slice(0, 128)                        # samples shown in the animation (1.28 us)
+WIN = slice(0, 128)                        # default time window (1.28 us)
 WIN_STATIC = slice(0, 80)                  # samples shown in the static figures (0.8 us)
 
 # Palette (validated: CVD- and normal-vision-safe; restored/aqua is always direct-labelled)
@@ -125,87 +122,6 @@ def add_key(ax, entries):
         ax.text(1.12, y, lab, color=INK2, fontsize=9, va="center", transform=ax.transAxes)
 
 
-# ---------------------------------------------------------------- animation
-def frames_for_sample(d, i, restored, snr_in, snr_out):
-    """Yield (stage_index, title, time_series[(y, color, lw, ls, label)], spectrogram_signal)."""
-    clean, dist = d["clean"][i], d["distortions"][i]            # dist order: AWGN, echo, CCI
-    order = [(1, "Echo"), (2, "Interference"), (0, "Noise")]
-    t = lambda k, n: (k + 1) / n
-    yield from [(0, "Clean radar signal", [(norm(clean), C_CLEAN, 2, "-", "clean")], norm(clean))] * 8
-    acc = clean.copy()
-    for step, (c, name) in enumerate(order, start=1):
-        for k in range(6):
-            x = norm(acc + t(k, 6) * dist[c])
-            yield step, f"+ {name}", [(x, C_CORRUPT, 1.5, "-", "received")], x
-        acc = acc + dist[c]
-        yield from [(step, f"+ {name}", [(norm(acc), C_CORRUPT, 1.5, "-", "received")], norm(acc))] * 3
-    rx = norm(acc)
-    yield from [(4, f"Received signal · SNR {db(snr_in)} dB", [(rx, C_CORRUPT, 1.5, "-", "received")], rx)] * 8
-    for k in range(10):
-        a = t(k, 10)
-        y = (1 - a) * rx + a * restored
-        yield 5, "Restoring with BRSR-OpGAN …", [(norm(clean), C_CLEAN, 1.5, (0, (3, 2)), "clean"),
-                                                (y, C_RESTORED, 2, "-", "restored")], y
-    yield from [(5, f"Restored · SNR {db(snr_out)} dB  (input {db(snr_in)} dB)",
-                 [(norm(clean), C_CLEAN, 1.5, (0, (3, 2)), "clean"), (restored, C_RESTORED, 2, "-", "restored")],
-                 restored)] * 24
-
-
-def make_gif(d, idxs, restored, snr_in, snr_out, out_path, fps=12):
-    steps = ["Clean", "+ Echo", "+ Interference", "+ Noise", "Received", "BRSR-OpGAN"]
-    tmp = tempfile.mkdtemp()
-    fig = plt.figure(figsize=(9.6, 5.4), dpi=100)
-    n = 0
-    tt = np.arange(WIN.stop - WIN.start) / FS * 1e6
-    for i in idxs:
-        cls = CLASS_NAMES[d["label"][i] - 1]
-        vmax = spectrogram_db(norm(d["clean"][i])).max()
-        for stage, title, series, spec_sig in frames_for_sample(d, i, restored[i], snr_in[i], snr_out[i]):
-            fig.clf()
-            gs = fig.add_gridspec(3, 1, height_ratios=[0.34, 1.0, 1.15], hspace=0.55, left=0.08, right=0.83, top=0.95, bottom=0.1)
-            ax0, ax1, ax2 = fig.add_subplot(gs[0]), fig.add_subplot(gs[1]), fig.add_subplot(gs[2])
-            ax0.axis("off")
-            ax0.text(0, 1.0, f"BRSR-OpGAN · blind radar signal restoration · {cls} waveform", fontsize=12.5,
-                     fontweight="bold", color=INK, va="top", transform=ax0.transAxes)
-            x, renderer = 0.0, fig.canvas.get_renderer()
-            for k, s in enumerate(steps):
-                active = (k == stage) or (stage == 5 and k == 5)
-                col = INK if active else (INK2 if k < stage else MUTED)
-                t = ax0.text(x, 0.05, s, fontsize=10, color=col, fontweight="bold" if active else "normal",
-                             transform=ax0.transAxes, va="bottom")
-                bb = t.get_window_extent(renderer).transformed(ax0.transAxes.inverted())
-                x = bb.x1 + 0.012
-                if k < len(steps) - 1:
-                    a = ax0.text(x, 0.05, "›", fontsize=10, color=MUTED, transform=ax0.transAxes, va="bottom")
-                    x = a.get_window_extent(renderer).transformed(ax0.transAxes.inverted()).x1 + 0.012
-            ax1.set_title(title, loc="left", fontsize=11, color=INK, pad=4)
-            for k, (y, c, lw, ls, lab) in enumerate(series):
-                ax1.plot(tt, y[0, WIN], color=c, lw=lw, ls=ls, solid_capstyle="round")
-                ly = 0.85 - 0.2 * k                      # legend-style direct labels in the right margin
-                ax1.plot([1.02, 1.07], [ly, ly], color=c, lw=lw, ls=ls, transform=ax1.transAxes, clip_on=False)
-                ax1.text(1.085, ly, lab, color=INK2, fontsize=9, va="center", transform=ax1.transAxes)
-            style_time_axis(ax1)
-            S = spectrogram_db(spec_sig)
-            ax2.imshow(S, aspect="auto", origin="lower", cmap=SPEC_CMAP, vmin=vmax - 45, vmax=vmax,
-                       extent=[0, 1024 / FS * 1e6, -FS / 2e6, FS / 2e6])
-            ax2.set_ylabel("frequency (MHz)", fontsize=9)
-            ax2.set_xlabel("time (µs)", fontsize=9)
-            ax2.set_title("Spectrogram (full 10.24 µs signal)", loc="left", fontsize=10, color=INK2, pad=4)
-            ax2.tick_params(length=0)
-            for s in ax2.spines.values():
-                s.set_visible(False)
-            fig.savefig(os.path.join(tmp, f"f{n:04d}.png"))
-            n += 1
-    plt.close(fig)
-    pal = os.path.join(tmp, "pal.png")
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps), "-i", os.path.join(tmp, "f%04d.png"),
-                    "-vf", "scale=860:-1:flags=lanczos,palettegen=max_colors=96:stats_mode=diff", pal], check=True)
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps), "-i", os.path.join(tmp, "f%04d.png"),
-                    "-i", pal, "-lavfi", "scale=860:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle",
-                    "-loop", "0", out_path], check=True)
-    shutil.rmtree(tmp)
-
-
 # ---------------------------------------------------------------- static figures
 def make_snr_sweep(models, d, i, out_path, levels=(-12, -6, 0, 6)):
     clean, dist = d["clean"][i], d["distortions"][i].sum(axis=0)
@@ -269,7 +185,7 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out_dir, exist_ok=True)
 
-    rows = [ROW_GIF, ROW_SWEEP, ROW_TWO_PASS]
+    rows = [ROW_SWEEP, ROW_TWO_PASS]
     d = load_rows(args.test_file, rows)
     models = load_models(args.weights_dir)
     _, restored = run(models, np.stack([norm(x) for x in d["noisy"]]))
@@ -278,9 +194,8 @@ def main():
     for i in range(len(rows)):
         print(f"row {rows[i]}: input {snr_in[i]:.2f} dB -> restored {snr_out[i]:.2f} dB")
 
-    make_gif(d, [0], restored, snr_in, snr_out, os.path.join(args.out_dir, "brsr_restoration_demo.gif"))
-    make_snr_sweep(models, d, 1, os.path.join(args.out_dir, "snr_sweep.png"))
-    make_two_pass(models, d, 2, os.path.join(args.out_dir, "two_pass.png"))
+    make_snr_sweep(models, d, 0, os.path.join(args.out_dir, "snr_sweep.png"))
+    make_two_pass(models, d, 1, os.path.join(args.out_dir, "two_pass.png"))
     print(f"Saved figures to {args.out_dir}")
 
 

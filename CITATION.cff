@@ -22,7 +22,6 @@ keywords:
   - Self-ONN
   - generative adversarial network
   - CoRe-Net
-  - XCoRe-Net
 preferred-citation:
   type: article
   title: "BRSR-OpGAN: Blind radar signal restoration using operational generative adversarial network"

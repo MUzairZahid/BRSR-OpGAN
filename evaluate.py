@@ -17,8 +17,7 @@ Paper protocol: the noisy input is min-max scaled per channel to [-1, 1]; the ou
 back with the clean signal's per-channel min/max; SNR = 10 log10(mean|clean|^2 / mean|err|^2);
 MSE in physical units; PSNR uses the peak |clean| within consecutive blocks of 32 test signals
 (batch size of the original evaluation script).
-Blind metrics: SI-SDR of the zero-mean output vs. the zero-mean clean signal (scale-invariant,
-no clean-based rescaling), and SNR after mapping the output back with the *noisy* signal's min/max.
+Additional metric: SI-SDR of the zero-mean output vs. the zero-mean clean signal (scale-invariant).
 """
 import argparse
 import os
@@ -112,7 +111,7 @@ def evaluate(models, data_dir, dataset, device):
     nmin, nmax = minmax(noisy32)
     x_norm = (2 * (noisy32 - nmin) / (nmax - nmin) - 1).astype(np.float32)
     clean, noisy = clean32.astype(np.float64), noisy32.astype(np.float64)
-    cmin, cmax, nmin, nmax = (v.astype(np.float64) for v in (cmin, cmax, nmin, nmax))
+    cmin, cmax = cmin.astype(np.float64), cmax.astype(np.float64)
 
     per = pd.DataFrame({"row": np.arange(len(clean)), "label": d["label"], "snr_target_db": d["snr_db"],
                         "input__snr_db": snr_db(noisy, clean), "input__psnr_db": psnr_db(noisy, clean),
@@ -121,12 +120,10 @@ def evaluate(models, data_dir, dataset, device):
         t0 = time.time()
         y = restore(load_chain(paths, q, device), x_norm, device).astype(np.float64)
         r_paper = (y + 1) / 2 * (cmax - cmin) + cmin
-        r_blind = (y + 1) / 2 * (nmax - nmin) + nmin
         per[f"{name}__snr_db"] = snr_db(r_paper, clean)
         per[f"{name}__psnr_db"] = psnr_db(r_paper, clean)
         per[f"{name}__mse"] = mse(r_paper, clean)
         per[f"{name}__sisdr_db"] = sisdr_db(y, clean)
-        per[f"{name}__snr_noisyscale_db"] = snr_db(r_blind, clean)
         print(f"  {name:18s} SNR {per[f'{name}__snr_db'].mean():6.2f} dB   ({time.time() - t0:.0f}s)", flush=True)
     return per
 
@@ -151,8 +148,7 @@ def summarize(per, models, dataset, meta):
                 rows.append({"group_by": gname, "group": g, "n": len(sub),
                              "model": "Corrupted input" if name == "input" else name,
                              "snr_db": sub[f"{name}__snr_db"].mean(), "psnr_db": sub[f"{name}__psnr_db"].mean(),
-                             "mse": sub[f"{name}__mse"].mean(), "sisdr_db": sub[f"{name}__sisdr_db"].mean(),
-                             "snr_noisyscale_db": sub[f"{name}__snr_noisyscale_db"].mean() if name != "input" else np.nan})
+                             "mse": sub[f"{name}__mse"].mean(), "sisdr_db": sub[f"{name}__sisdr_db"].mean()})
     return pd.DataFrame(rows)
 
 
@@ -186,7 +182,7 @@ def main():
     summary.to_csv(os.path.join(out_dir, f"{args.dataset}_test_summary.csv"), index=False, float_format="%.4f")
 
     ov = summary[summary.group_by == "overall"].set_index("model")
-    print("\nOverall (paper protocol: SNR, PSNR, MSE; blind: SI-SDR)")
+    print("\nOverall (paper protocol: SNR, PSNR, MSE; additional: SI-SDR)")
     print(ov[["snr_db", "psnr_db", "mse", "sisdr_db"]].round(2).to_string())
     if args.dataset == "awgn_baseline":
         t = summary[summary.group_by == "snr_db"].pivot(index="group", columns="model", values="snr_db")

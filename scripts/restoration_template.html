@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRSR-OpGAN: blind radar signal restoration, step by step</title>
+<meta name="description" content="Interactive animation: a real test signal of the BRSR (Blind Radar Signal Restoration) benchmark is corrupted by echo, co-channel interference and AWGN, then restored by BRSR-OpGAN, an operational GAN built from Self-ONN layers (Neural Networks, 2025).">
+<meta property="og:title" content="BRSR-OpGAN: blind radar signal restoration">
+<meta property="og:description" content="A real BRSR test signal, corrupted by the radar channel and restored by BRSR-OpGAN.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<style>
+:root{--ivory:#faf9f5;--paper:#fffefb;--ink:#141413;--ink2:#3f3e3a;--muted:#5f5e58;--line:#e3dfd3;--line2:#dcd8cc;
+  --clean:#2a78d6;--echo:#8a5cc9;--cci:#eb6834;--noise:#8a8983;--rest:#1baf7a;
+  --sans:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;--serif:Newsreader,Georgia,serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ivory);color:var(--ink);font-family:var(--sans)}
+main{padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#fit{position:relative;overflow:hidden}
+#board{position:absolute;left:0;top:0;width:1440px;height:900px;padding:40px;background:var(--ivory);display:flex;flex-direction:column;gap:20px;transform-origin:0 0}
+body.record main{padding:0}
+body.record footer{display:none}
+button{font-family:inherit;cursor:pointer;color:inherit}
+button:focus-visible{outline:2px solid var(--clean);outline-offset:2px}
+.mono{font-family:var(--mono)}
+header.top{height:72px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{margin:6px 0 0;font-family:var(--serif);font-weight:500;font-size:38px;line-height:1.05;letter-spacing:-.01em}
+.controls{display:flex;align-items:center;gap:16px}
+.seg{display:flex;gap:4px;padding:4px;border:1px solid var(--line2);border-radius:12px;background:var(--paper)}
+.seg button{height:44px;min-width:80px;padding:0 14px;border:none;border-radius:9px;font-size:15px;font-weight:500;background:transparent}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ivory)}
+#play{height:52px;padding:0 20px;display:flex;align-items:center;gap:10px;border:1px solid var(--ink);border-radius:12px;background:var(--ink);color:var(--ivory);font-size:15px;font-weight:500}
+#restart{width:52px;height:52px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2);border-radius:12px;background:var(--paper)}
+.card{border:1px solid var(--line);border-radius:16px;background:var(--paper)}
+#scene{width:1360px;height:320px;overflow:hidden}
+#scene svg{display:block}
+.stepper{height:52px;display:flex;align-items:center;gap:20px}
+.steps{display:flex;gap:6px}
+.steps button{height:46px;padding:0 14px 0 9px;display:flex;align-items:center;gap:9px;border-radius:23px;border:1px solid var(--line2);background:var(--paper);color:var(--muted);font-size:14px;font-weight:500}
+.steps button .n{width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;background:#b3afa3;color:#fff}
+.steps button.done{color:var(--ink);border-color:#8f8b7e}
+.steps button.cur{background:var(--ink);color:var(--ivory);border-color:var(--ink)}
+#caption{margin:0;flex:1;font-size:14px;line-height:1.45;color:var(--ink2)}
+.bottom{height:320px;display:flex;gap:20px}
+.panel{padding:20px;display:flex;flex-direction:column;gap:12px}
+.ptitle{height:20px;display:flex;justify-content:space-between;align-items:center}
+.ptitle b{font-size:14px;font-weight:600}
+.legend{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--ink2)}
+.legend span{display:flex;align-items:center;gap:6px}
+.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.chip{height:54px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;justify-content:space-between}
+.chip .row{display:flex;justify-content:space-between;font-size:13px}
+.chip .row b{font-weight:600}
+.chip .track{height:6px;border-radius:3px;background:#efece2;overflow:hidden}
+.chip .bar{height:6px;border-radius:3px;width:0}
+.specbox{position:relative;width:520px;height:211px;border-radius:8px;overflow:hidden;background:#f3f1ea}
+.specbox .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted)}
+.specbox .layer{position:absolute;inset:0}
+.specbox img{position:absolute;left:0;top:0;width:520px;height:211px;opacity:0}
+.axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted)}
+footer{max-width:1440px;width:100%;display:flex;flex-wrap:wrap;gap:4px 20px;justify-content:center;font-size:13px;line-height:1.5;color:var(--ink2)}
+footer a{color:#1d5ea8}
+footer a:hover{color:#0d366b}
+</style>
+</head>
+<body>
+<main>
+<div id="fit">
+<div id="board">
+
+<header class="top">
+  <div>
+    <div class="kicker">BRSR-OpGAN · a real test signal of the BRSR benchmark</div>
+    <h1>One BRSR test signal: corrupted, then restored</h1>
+  </div>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Test signal">
+      __WF_BUTTONS__
+    </div>
+    <button type="button" id="play">
+      <svg id="icoPause" width="16" height="16" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="13" stroke="#faf9f5" stroke-width="2.4" stroke-linecap="round"/><line x1="11" y1="3" x2="11" y2="13" stroke="#faf9f5" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <svg id="icoPlay" width="16" height="16" aria-hidden="true" style="display:none"><path d="M4 2.5 L13.5 8 L4 13.5 Z" fill="none" stroke="#faf9f5" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span id="playLabel">Pause</span>
+    </button>
+    <button type="button" id="restart" aria-label="Restart animation">
+      <svg width="20" height="20" aria-hidden="true"><path d="M4.5 10 A 5.5 5.5 0 1 0 6.2 6" fill="none" stroke="#141413" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 3.5 L6.4 6.2 L3.2 7.8" fill="none" stroke="#141413" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<div id="scene" class="card">
+<svg width="1358" height="318" role="img" aria-label="Radar scene: an emitter sends a pulse to a receiver; a building reflects a delayed echo, a second emitter adds interference and the receiver adds noise; the received signal is then restored by BRSR-OpGAN">
+  <text x="24" y="306" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58">fs = 100 MHz · 1024 complex samples (10.24 µs) per signal</text>
+  <line x1="0" y1="280" x2="1358" y2="280" stroke="#b9b5a7" stroke-width="1.2"/>
+  <g id="ticks" stroke="#d9d5c8" stroke-width="1"></g>
+
+  <g fill="none" stroke="#cfcbbd" stroke-width="1.2" stroke-dasharray="4 6">
+    <polyline points="126,104 980,104"/>
+    <polyline points="126,104 454,198 980,104"/>
+    <polyline points="760,190 980,104"/>
+    <polyline points="986,104 1056,104"/>
+  </g>
+
+  <g fill="#efece2" stroke="#8f8b7e" stroke-width="1.2">
+    <rect x="370" y="236" width="44" height="44"/>
+    <rect x="430" y="198" width="48" height="82"/>
+    <rect x="486" y="226" width="38" height="54"/>
+    <rect x="530" y="248" width="30" height="32"/>
+  </g>
+  <g stroke="#cdc9bb" stroke-width="1">
+    <line x1="440" y1="216" x2="468" y2="216"/><line x1="440" y1="234" x2="468" y2="234"/><line x1="440" y1="252" x2="468" y2="252"/>
+    <line x1="380" y1="254" x2="404" y2="254"/><line x1="494" y1="244" x2="516" y2="244"/>
+  </g>
+
+  <g fill="none" stroke="#141413">
+    <polyline points="94,280 108,116 112,116 126,280" stroke-width="1.6" stroke-linejoin="round"/>
+    <polyline points="97,250 122,230 100,210 119,190 103,170 116,150 105,132" stroke-width="1"/>
+    <path d="M104 86 Q 130 104 104 122" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="108" y1="104" x2="124" y2="104" stroke-width="1.4"/>
+    <polyline points="980,280 994,116 998,116 1012,280" stroke-width="1.6" stroke-linejoin="round"/>
+    <polyline points="1009,250 984,230 1006,210 987,190 1003,170 990,150 1001,132" stroke-width="1"/>
+    <path d="M1002 86 Q 976 104 1002 122" stroke-width="2.2" stroke-linecap="round"/>
+    <line x1="982" y1="104" x2="998" y2="104" stroke-width="1.4"/>
+    <polyline points="750,280 759,204 761,204 770,280" stroke-width="1.4" stroke-linejoin="round"/>
+    <line x1="760" y1="204" x2="760" y2="194" stroke-width="1.4"/>
+    <path d="M749 180 Q 744 190 749 200" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M771 180 Q 776 190 771 200" stroke-width="1.2" stroke-linecap="round"/>
+  </g>
+  <circle cx="126" cy="104" r="3.2" fill="#2a78d6"/>
+  <circle cx="760" cy="190" r="4" fill="#eb6834"/>
+
+  <!-- the restoration model -->
+  <rect id="boxGlow" x="1050" y="38" width="272" height="140" rx="16" fill="#1baf7a" opacity="0"/>
+  <rect x="1056" y="44" width="260" height="128" rx="12" fill="#fffefb" stroke="#141413" stroke-width="1.4"/>
+  <text x="1072" y="68" font-family="IBM Plex Sans, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#141413">BRSR-OpGAN-D-2P</text>
+  <text x="1072" y="85" font-family="IBM Plex Mono, monospace" font-size="11" fill="#5f5e58">Self-ONN U-Net · Q = 3</text>
+  <text id="passLbl" x="1300" y="68" font-family="IBM Plex Mono, monospace" font-size="11" fill="#127a55" text-anchor="end" opacity="0"></text>
+  <g id="bars"></g>
+  <line x1="1186" y1="172" x2="1186" y2="222" stroke="#cfcbbd" stroke-width="1.2" stroke-dasharray="4 6"/>
+
+  <g id="rings" fill="none" stroke-width="1.4"></g>
+
+  <g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <polyline id="trailD" stroke="#2a78d6" opacity="0"/>
+    <polyline id="trailE" stroke="#8a5cc9" opacity="0"/>
+    <polyline id="trailC" stroke="#eb6834" opacity="0"/>
+    <polyline id="trailM" stroke="#141413" opacity="0"/>
+    <polyline id="trailR" stroke="#1baf7a" opacity="0"/>
+  </g>
+
+  <g id="dots" fill="#6f6e68"></g>
+
+  <g fill="none" stroke-width="2.2" stroke-linejoin="round">
+    <polyline id="pktD" stroke="#2a78d6" opacity="0"/>
+    <polyline id="pktE" stroke="#8a5cc9" opacity="0"/>
+    <polyline id="pktC" stroke="#eb6834" opacity="0"/>
+    <polyline id="pktM" stroke="#141413" opacity="0"/>
+    <polyline id="pktR" stroke="#1baf7a" opacity="0"/>
+  </g>
+
+  <circle id="rxGlow" cx="980" cy="104" r="12" fill="#141413" opacity="0"/>
+  <circle cx="980" cy="104" r="3.6" fill="#141413"/>
+
+  <g font-family="IBM Plex Sans, Helvetica, sans-serif">
+    <g id="lblTx" opacity="0">
+      <text x="126" y="58" font-size="14" font-weight="600" fill="#141413" text-anchor="middle">Emitter</text>
+      <text id="txParams" x="126" y="75" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58" text-anchor="middle"></text>
+    </g>
+    <g id="lblDirect" opacity="0">
+      <text x="553" y="92" font-size="14" font-weight="600" fill="#1d5ea8" text-anchor="middle">Direct path · the clean pulse, which is the target</text>
+    </g>
+    <g id="lblEcho" opacity="0">
+      <text x="262" y="214" font-size="14" font-weight="600" fill="#6a3fae" text-anchor="middle">Echo · a delayed copy off a building</text>
+      <text id="echoDetail" x="262" y="232" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="middle"></text>
+    </g>
+    <g id="lblCci" opacity="0">
+      <text x="782" y="226" font-size="14" font-weight="600" fill="#b8491d">Co-channel interference</text>
+      <text id="cciDetail" x="782" y="244" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a"></text>
+    </g>
+    <g id="lblNoise" opacity="0">
+      <text id="noiseDetail" x="1030" y="306" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="end"></text>
+    </g>
+    <g id="lblRx" opacity="0">
+      <text x="980" y="58" font-size="14" font-weight="600" fill="#141413" text-anchor="middle">Receiver</text>
+      <text id="rxDetail" x="980" y="75" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58" text-anchor="middle"></text>
+    </g>
+    <g id="lblOut" opacity="0">
+      <text x="1186" y="246" font-size="14" font-weight="600" fill="#127a55" text-anchor="middle">Restored output</text>
+      <text id="outDetail" x="1186" y="264" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="middle"></text>
+    </g>
+  </g>
+</svg>
+</div>
+
+<div class="stepper">
+  <div class="steps" role="group" aria-label="Jump to a stage">
+    <button type="button" data-step="0"><span class="n">1</span><span>Transmit</span></button>
+    <button type="button" data-step="1"><span class="n">2</span><span>Echo</span></button>
+    <button type="button" data-step="2"><span class="n">3</span><span>Interference</span></button>
+    <button type="button" data-step="3"><span class="n">4</span><span>Noise</span></button>
+    <button type="button" data-step="4"><span class="n">5</span><span>Received</span></button>
+    <button type="button" data-step="5"><span class="n">6</span><span>Restored</span></button>
+  </div>
+  <p id="caption" aria-live="polite"></p>
+</div>
+
+<div class="bottom">
+  <div class="card panel" style="width:780px">
+    <div class="ptitle">
+      <b>I channel · first 160 of 1024 samples (1.6 µs)</b>
+      <div class="legend">
+        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#2a78d6" stroke-width="2" stroke-dasharray="4 3"/></svg>clean target</span>
+        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#141413" stroke-width="1.6"/></svg>received</span>
+        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#1baf7a" stroke-width="2"/></svg>restored</span>
+      </div>
+    </div>
+    <svg width="740" height="170" role="img" aria-label="Waveform plot of the I channel: clean target, received and restored signal">
+      <line x1="0" y1="85" x2="740" y2="85" stroke="#e3dfd3" stroke-width="1"/>
+      <polyline id="plotRx" fill="none" stroke="#141413" stroke-width="1.4" stroke-linejoin="round"/>
+      <polyline id="plotRest" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" opacity="0"/>
+      <polyline id="plotClean" fill="none" stroke="#2a78d6" stroke-width="1.8" stroke-dasharray="5 3" opacity="0"/>
+    </svg>
+    <div class="chips">
+      <div class="chip"><div class="row"><b style="color:#6a3fae">Echo</b><span class="mono" id="wE"></span></div><div class="track"><div class="bar" id="barE" style="background:#8a5cc9"></div></div></div>
+      <div class="chip"><div class="row"><b style="color:#b8491d">Interference</b><span class="mono" id="wC"></span></div><div class="track"><div class="bar" id="barC" style="background:#eb6834"></div></div></div>
+      <div class="chip"><div class="row"><b style="color:#3f3e3a">AWGN</b><span class="mono" id="wN"></span></div><div class="track"><div class="bar" id="barN" style="background:#8a8983"></div></div></div>
+      <div class="chip"><div class="row"><b style="color:#127a55">Restored</b><span class="mono" id="wR"></span></div><div class="track"><div class="bar" id="barR" style="background:#1baf7a"></div></div></div>
+    </div>
+  </div>
+
+  <div class="card panel" style="width:560px">
+    <div class="ptitle">
+      <b>Spectrogram · full 10.24 µs</b>
+      <span class="mono" id="specStage" style="font-size:12px;color:#3f3e3a"></span>
+    </div>
+    <div class="specbox">
+      <div class="wait">Waiting for the pulse to arrive</div>
+      <div class="layer" id="specLayer" style="opacity:0">
+        __SPEC_IMGS__
+      </div>
+    </div>
+    <div class="axis"><span>time 0 → 10.24 µs</span><span>frequency −50 … 50 MHz</span></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<footer>
+  <a href="https://github.com/MUzairZahid/BRSR-OpGAN">BRSR-OpGAN code and weights</a>
+  <a href="https://doi.org/10.1016/j.neunet.2025.107709">BRSR-OpGAN paper</a>
+  <a href="https://doi.org/10.5281/zenodo.23010395">BRSR dataset (Zenodo)</a>
+  <a href="https://muzairzahid.github.io/BRSR-DataGen/radar_environment.html">How BRSR data is generated</a>
+</footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var SIG = __DATA__;
+  var ORDER = Object.keys(SIG);
+  var T_END = 17.5;
+  var TX = [126, 104], RX = [980, 104], REF = [454, 198], INT = [760, 190], BOX = [1056, 104], OUT0 = [1186, 176], OUT1 = [1186, 224];
+  var NS = "http://www.w3.org/2000/svg";
+  var params = new URLSearchParams(location.search);
+  var state = { t: 0, wf: ORDER[0], paused: false, speed: Math.min(4, Math.max(0.25, parseFloat(params.get("speed")) || 1)) };
+  if (params.get("record")) document.body.classList.add("record");
+  if (SIG[params.get("wf")]) state.wf = params.get("wf");
+
+  var $ = function (id) { return document.getElementById(id); };
+  var clamp = function (x) { return Math.max(0, Math.min(1, x)); };
+  var R = function (a, b) { var x = clamp((state.t - a) / (b - a)); return x * x * (3 - 2 * x); };
+  var pt = function (q) { return q[0].toFixed(1) + "," + q[1].toFixed(1); };
+  var fmt = function (v) { return v.toFixed(1).replace("-", "−"); };
+
+  // ---- static pieces made once
+  var i, el;
+  for (var x = 8; x < 1358; x += 22) {
+    el = document.createElementNS(NS, "line");
+    el.setAttribute("x1", x); el.setAttribute("y1", 280); el.setAttribute("x2", x - 8); el.setAttribute("y2", 292);
+    $("ticks").appendChild(el);
+  }
+  var ringPool = [];
+  for (i = 0; i < 24; i++) { el = document.createElementNS(NS, "circle"); el.setAttribute("opacity", 0); $("rings").appendChild(el); ringPool.push(el); }
+
+  // U-Net style layer bars inside the model box
+  var BAR_H = [52, 42, 32, 22, 14, 22, 32, 42, 52], bars = [];
+  BAR_H.forEach(function (h, k) {
+    var b = document.createElementNS(NS, "rect");
+    b.setAttribute("x", 1083 + k * 24); b.setAttribute("y", 130 - h / 2); b.setAttribute("width", 14); b.setAttribute("height", h);
+    b.setAttribute("rx", 3); b.setAttribute("fill", "#efece2"); b.setAttribute("stroke", "#8f8b7e"); b.setAttribute("stroke-width", 1);
+    $("bars").appendChild(b); bars.push(b);
+  });
+
+  var seed = 12345;
+  var rnd = function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  var gauss = function () { return Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd()); };
+  var dots = [];
+  for (i = 0; i < 120; i++) {
+    var dx, dy;
+    if (i < 75) { dx = 980 + gauss() * 65; dy = 125 + gauss() * 55; } else { dx = 40 + rnd() * 1000; dy = 20 + rnd() * 250; }
+    el = document.createElementNS(NS, "circle");
+    el.setAttribute("r", (1.3 + rnd() * 1.5).toFixed(2));
+    el.setAttribute("opacity", 0);
+    $("dots").appendChild(el);
+    dots.push({ el: el, x: Math.max(4, Math.min(1040, dx)), y: Math.max(4, Math.min(276, dy)), ph: rnd() * 6.283, k: 3 + rnd() * 5 });
+  }
+
+  function walk(pts, p) {
+    var segs = [], total = 0, k;
+    for (k = 1; k < pts.length; k++) { var L = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); segs.push(L); total += L; }
+    var d = clamp(p) * total, trail = [pts[0]];
+    for (k = 0; k < segs.length; k++) {
+      var a = pts[k], b = pts[k + 1], ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+      if (d <= segs[k] || k === segs.length - 1) {
+        var f = segs[k] ? Math.min(1, d / segs[k]) : 0, q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+        trail.push(q);
+        return { q: q, ang: ang, trail: trail.map(pt).join(" ") };
+      }
+      d -= segs[k];
+      trail.push(b);
+    }
+  }
+
+  function shape(arr, n, half, amp) {
+    var seg = arr.slice(0, n), m = Math.max.apply(null, seg.map(Math.abs)) || 1;
+    return seg.map(function (v, j) { return (-half + 2 * half * j / (n - 1)).toFixed(1) + "," + (-amp * v / m).toFixed(1); }).join(" ");
+  }
+
+  var l1 = Math.hypot(REF[0] - TX[0], REF[1] - TX[1]), l2 = Math.hypot(RX[0] - REF[0], RX[1] - REF[1]);
+  var EVENTS = [
+    { at: 0.9, c: TX, color: "#2a78d6", big: true }, { at: 3.2, c: TX, color: "#8a5cc9", big: true },
+    { at: 3.2 + 2.4 * l1 / (l1 + l2), c: REF, color: "#8a5cc9", big: true }, { at: 6.3, c: INT, color: "#eb6834", big: true },
+    { at: 2.6, c: RX, color: "#2a78d6" }, { at: 5.6, c: RX, color: "#8a5cc9" }, { at: 7.6, c: RX, color: "#eb6834" }
+  ];
+  var STARTS = [0.4, 3.0, 6.0, 8.2, 9.9, 11.2];
+  var STEP_COLORS = ["#2a78d6", "#6a3fae", "#c9531f", "#6f6e68", "#52514e", "#127a55"];
+  var stepBtns = Array.prototype.slice.call(document.querySelectorAll(".steps button"));
+  var wfBtns = Array.prototype.slice.call(document.querySelectorAll(".seg button"));
+  var imgs = Array.prototype.slice.call(document.querySelectorAll(".specbox img"));
+
+  function setWaveform(wf) {
+    state.wf = wf;
+    var D = SIG[wf], w = D.w;
+    wfBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.wf === wf ? "true" : "false"); });
+    $("pktD").setAttribute("points", shape(D.clean, 44, 56, 12));
+    $("pktE").setAttribute("points", shape(D.clean, 44, 56, 12));
+    $("pktC").setAttribute("points", shape(D.cci, 44, 56, 12));
+    $("pktM").setAttribute("points", shape(D.noisy, 40, 34, 11));
+    $("pktR").setAttribute("points", shape(D.restored, 36, 22, 10));
+    $("txParams").textContent = D.name + " · test row " + D.row;
+    $("echoDetail").textContent = "τ = " + D.delay + " samples · weight " + w[1].toFixed(2);
+    $("cciDetail").textContent = "signal #" + D.cci_id + " · weight " + w[2].toFixed(2);
+    $("noiseDetail").textContent = "AWGN at the receiver · weight " + w[0].toFixed(2);
+    $("rxDetail").textContent = "SNR " + fmt(D.snr_in) + " dB";
+    $("outDetail").textContent = "SNR " + fmt(D.snr_in) + " → " + fmt(D.snr_out) + " dB";
+    $("wE").textContent = "w " + w[1].toFixed(2);
+    $("wC").textContent = "w " + w[2].toFixed(2);
+    $("wN").textContent = "w " + w[0].toFixed(2);
+    $("wR").textContent = fmt(D.snr_out) + " dB";
+    lastCaption = "";
+    render();
+  }
+
+  function captionFor(stage, D) {
+    return [
+      "The emitter sends a clean " + D.name + " pulse. The copy that arrives on the direct path is the clean target stored in the BRSR test set.",
+      "Multipath: the same pulse reflects off a building and reaches the receiver " + D.delay + " samples (" + (D.delay / 100).toFixed(2) + " µs) later.",
+      "A second emitter on the same band adds co-channel interference, one of the benchmark's fixed interference signals (#" + D.cci_id + ").",
+      "The receiver adds AWGN. The three weights are random and sum to 1, and their total power sets the input SNR.",
+      "Received at " + fmt(D.snr_in) + " dB SNR. BRSR-OpGAN gets only this signal, with no hint of which artifacts it contains.",
+      "Two passes of the Self-ONN generator restore the signal from " + fmt(D.snr_in) + " dB to " + fmt(D.snr_out) + " dB SNR. Dashed blue is the clean target."
+    ][stage];
+  }
+
+  function packet(id, pts, a, b) {
+    var p = (state.t - a) / (b - a), w = walk(pts, p), on = p > 0 && p < 1.08;
+    var op = on ? Math.min(clamp(p / 0.08), clamp((1.08 - p) / 0.12)) : 0;
+    el = $(id);
+    el.setAttribute("transform", "translate(" + pt(w.q) + ") rotate(" + w.ang.toFixed(1) + ")");
+    el.setAttribute("opacity", op.toFixed(3));
+    return { trail: w.trail, started: p > 0 };
+  }
+
+  var lastStage = -1, lastCaption = "";
+  function render() {
+    var t = state.t, D = SIG[state.wf];
+    var cS = R(2.4, 2.8), cE = R(5.4, 5.9), cC = R(7.4, 7.9), cN = R(8.4, 9.6), cR = R(12.4, 13.4);
+
+    var pD = packet("pktD", [TX, RX], 0.9, 2.6), pE = packet("pktE", [TX, REF, RX], 3.2, 5.6), pC = packet("pktC", [INT, RX], 6.3, 7.6);
+    var pM = packet("pktM", [RX, BOX], 10.3, 11.2), pR = packet("pktR", [OUT0, OUT1], 12.6, 13.3);
+    [["trailD", pD, cS], ["trailE", pE, cE], ["trailC", pC, cC], ["trailM", pM, R(11.1, 11.4)], ["trailR", pR, R(13.2, 13.5)]].forEach(function (r) {
+      var e = $(r[0]);
+      e.setAttribute("points", r[1].trail);
+      e.setAttribute("opacity", r[1].started ? (0.25 + 0.35 * (1 - r[2])).toFixed(3) : 0);
+    });
+
+    var n = 0;
+    EVENTS.forEach(function (e) {
+      for (var k = 0; k < (e.big ? 3 : 1); k++) {
+        var age = t - e.at - k * 0.22, life = e.big ? 1.3 : 0.7;
+        if (age > 0 && age < life && n < ringPool.length) {
+          var c = ringPool[n++];
+          c.setAttribute("cx", e.c[0]); c.setAttribute("cy", e.c[1]);
+          c.setAttribute("r", ((e.big ? 10 : 6) + age / life * (e.big ? 150 : 40)).toFixed(1));
+          c.setAttribute("stroke", e.color);
+          c.setAttribute("opacity", ((e.big ? 0.45 : 0.6) * (1 - age / life)).toFixed(3));
+        }
+      }
+    });
+    for (; n < ringPool.length; n++) ringPool[n].setAttribute("opacity", 0);
+
+    dots.forEach(function (d) {
+      if (cN < 0.001) { d.el.setAttribute("opacity", 0); return; }
+      d.el.setAttribute("cx", (d.x + Math.sin(t * d.k + d.ph) * 3).toFixed(1));
+      d.el.setAttribute("cy", (d.y + Math.cos(t * d.k * 0.8 + d.ph) * 3).toFixed(1));
+      d.el.setAttribute("opacity", (cN * (0.2 + 0.55 * Math.abs(Math.sin(t * d.k + d.ph)))).toFixed(3));
+    });
+
+    // model: two sweeps over the layers (two passes), then it stays lit
+    var p = (t - 11.2) / 1.4, running = p > 0 && p < 1, done = p >= 1;
+    var sweep = running ? (p < 0.5 ? p / 0.5 : (p - 0.5) / 0.5) * BAR_H.length : -9;
+    bars.forEach(function (b, k) {
+      var lit = done ? 0.55 : Math.max(0, 1 - Math.abs(sweep - k - 0.5) / 1.6);
+      b.setAttribute("fill", lit > 0.02 ? "rgba(27,175,122," + (0.15 + 0.7 * lit).toFixed(3) + ")" : "#efece2");
+      b.setAttribute("stroke", lit > 0.02 ? "#127a55" : "#8f8b7e");
+    });
+    $("passLbl").textContent = running ? (p < 0.5 ? "pass 1 of 2" : "pass 2 of 2") : "2 passes";
+    $("passLbl").setAttribute("opacity", (running ? 1 : done ? 0.8 : 0).toFixed(2));
+    $("boxGlow").setAttribute("opacity", (running ? 0.10 + 0.06 * Math.sin(t * 10) : 0).toFixed(3));
+
+    $("rxGlow").setAttribute("r", (12 + 3 * Math.sin(t * 6)).toFixed(1));
+    $("rxGlow").setAttribute("opacity", (0.12 * R(9.8, 10.3) * (1 - R(11.2, 11.6))).toFixed(3));
+    [["lblTx", 0.2, 0.7], ["lblDirect", 0.9, 1.3], ["lblEcho", 3.2, 3.6], ["lblCci", 6.3, 6.7], ["lblNoise", 8.3, 8.7], ["lblRx", 9.8, 10.3], ["lblOut", 13.0, 13.5]]
+      .forEach(function (g) { $(g[0]).setAttribute("opacity", R(g[1], g[2]).toFixed(3)); });
+
+    var len = D.clean.length, sx = 740 / (len - 1), sy = 78 / D.ymax, rx = [], cl = [];
+    for (var j = 0; j < len; j++) {
+      var recv = cS * D.clean[j] + cE * D.echo[j] + cC * D.cci[j] + cN * D.noise[j];
+      var v = (1 - cR) * recv + cR * D.restored[j];
+      rx.push((j * sx).toFixed(1) + "," + (85 - sy * v).toFixed(1));
+      cl.push((j * sx).toFixed(1) + "," + (85 - sy * D.clean[j]).toFixed(1));
+    }
+    $("plotRx").setAttribute("points", rx.join(" "));
+    $("plotRest").setAttribute("points", rx.join(" "));
+    $("plotRx").setAttribute("opacity", (1 - cR).toFixed(3));
+    $("plotRest").setAttribute("opacity", cR.toFixed(3));
+    $("plotClean").setAttribute("points", cl.join(" "));
+    $("plotClean").setAttribute("opacity", (0.9 * cS).toFixed(3));
+    $("barE").style.width = Math.round(cE * 100) + "%";
+    $("barC").style.width = Math.round(cC * 100) + "%";
+    $("barN").style.width = Math.round(cN * 100) + "%";
+    $("barR").style.width = Math.round(cR * 100) + "%";
+
+    var level = [1, cE, cC, cN, cR];
+    imgs.forEach(function (im) { im.style.opacity = im.dataset.wf === state.wf ? level[+im.dataset.k].toFixed(3) : 0; });
+    $("specLayer").style.opacity = cS.toFixed(3);
+    $("specStage").textContent = cS < 0.5 ? "no signal yet" : cR > 0.5 ? "restored by BRSR-OpGAN-D-2P" : cN > 0.5 ? "received (all three artifacts)"
+      : cC > 0.5 ? "clean + echo + interference" : cE > 0.5 ? "clean + echo" : "clean pulse";
+
+    var stage = t < 3.0 ? 0 : t < 6.0 ? 1 : t < 8.2 ? 2 : t < 9.8 ? 3 : t < 11.2 ? 4 : 5;
+    if (stage !== lastStage) {
+      stepBtns.forEach(function (b, k) {
+        b.classList.toggle("cur", k === stage);
+        b.classList.toggle("done", k < stage);
+        if (k === stage) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+        b.querySelector(".n").style.background = k <= stage ? STEP_COLORS[k] : "#b3afa3";
+      });
+      lastStage = stage;
+    }
+    var cap = captionFor(stage, D);
+    if (cap !== lastCaption) { $("caption").textContent = cap; lastCaption = cap; }
+  }
+
+  // ---- controls
+  function setPaused(p) {
+    state.paused = p;
+    $("playLabel").textContent = p ? "Play" : "Pause";
+    $("icoPause").style.display = p ? "none" : "";
+    $("icoPlay").style.display = p ? "" : "none";
+  }
+  $("play").addEventListener("click", function () { setPaused(!state.paused); });
+  $("restart").addEventListener("click", function () { state.t = 0; setPaused(false); render(); });
+  wfBtns.forEach(function (b) { b.addEventListener("click", function () { setWaveform(b.dataset.wf); }); });
+  stepBtns.forEach(function (b, k) { b.addEventListener("click", function () { state.t = STARTS[k]; render(); }); });
+
+  // ---- fit the whole board (and the footer links) in the window, width and height, without scrolling
+  function fit() {
+    var s = 1;
+    if (!document.body.classList.contains("record")) {
+      var footH = document.querySelector("footer").offsetHeight;
+      var availW = document.documentElement.clientWidth - 32, availH = window.innerHeight - footH - 12 - 8 - 12;
+      s = Math.max(0.2, Math.min(1.5, availW / 1440, availH / 900));
+    }
+    $("board").style.transform = "scale(" + s + ")";
+    $("fit").style.width = 1440 * s + "px";
+    $("fit").style.height = 900 * s + "px";
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  // ---- animation loop
+  var last = performance.now();
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function tick(now) {
+    var dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (!state.paused && !state.frozen) {
+      state.t += dt * state.speed;
+      if (state.t >= T_END) state.t = 0;
+      render();
+    }
+    requestAnimationFrame(tick);
+  }
+  setWaveform(state.wf);
+  if (reduce) { state.t = 15; setPaused(true); render(); }
+  requestAnimationFrame(tick);
+
+  // hook used by scripts/record_restoration_gif.py
+  window.brsrEnv = { setTime: function (t) { state.t = t; render(); }, freeze: function () { state.frozen = true; }, setWaveform: setWaveform, duration: T_END };
+})();
+</script>
+</body>
+</html>
