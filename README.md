@@ -2,7 +2,7 @@
 
 [![Paper](https://img.shields.io/badge/Neural%20Networks-2025-blue)](https://doi.org/10.1016/j.neunet.2025.107709)
 [![arXiv](https://img.shields.io/badge/arXiv-2407.13949-b31b1b)](https://arxiv.org/abs/2407.13949)
-[![Dataset DOI](https://img.shields.io/badge/BRSR%20dataset-10.5281%2Fzenodo.23010395-1682D4)](https://doi.org/10.5281/zenodo.23010395)
+[![Dataset DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23010395.svg)](https://doi.org/10.5281/zenodo.23010395)
 [![License: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
 
 Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 107709) and home of the **BRSR dataset**, the Blind Radar Signal Restoration benchmark. BRSR-OpGAN restores radar signals corrupted by an unknown blend of **additive white Gaussian noise (AWGN)**, **echo** and **co-channel interference (CCI)**. It makes no assumption about the type or severity of the corruption (blind restoration). It is a 1D **Operational GAN** built from **Self-Organized Operational Neural Network (Self-ONN)** layers and trained with a **dual-domain (time + frequency) loss**.
@@ -25,7 +25,7 @@ The same dataset is used by the follow-up works **CoRe-Net** and **XCoRe-Net** (
 
 ## BRSR dataset
 
-**Download:** [Zenodo, DOI 10.5281/zenodo.23010395](https://doi.org/10.5281/zenodo.23010395) (CC BY 4.0), or run `python download_data.py`.
+**Download:** [Zenodo record 23010395](https://zenodo.org/records/23010395) (DOI [10.5281/zenodo.23010395](https://doi.org/10.5281/zenodo.23010395), CC BY 4.0), or run `python download_data.py`.
 
 | | BRSR (blind) | AWGN-Baseline |
 |---|---|---|
@@ -124,7 +124,7 @@ BRSR-OpGAN/
 
 ## Related work
 
-- **CoRe-Net**: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration. [arXiv:2501.17125](https://arxiv.org/abs/2501.17125)
+- **CoRe-Net**: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration. *Machine Learning with Applications*, 25, 100939 (2026). [doi:10.1016/j.mlwa.2026.100939](https://doi.org/10.1016/j.mlwa.2026.100939)
 - **XCoRe-Net**: Expert Co-Operational Regressor Networks for High-Fidelity Restoration of Radar Signals.
 
 Both are evaluated on the same BRSR dataset and splits.
