@@ -1,0 +1,35 @@
+{
+  "brsr": {
+    "mean": [
+      -0.002055461661352543,
+      0.002238713268213514
+    ],
+    "std": [
+      1.4818479094801182,
+      1.4811992496701771
+    ],
+    "channels": [
+      "I",
+      "Q"
+    ],
+    "computed_on": "clean signals of the training split only (float64, population std)",
+    "n_values_per_channel": 51118080
+  },
+  "awgn_baseline": {
+    "mean": [
+      -0.0015869578138818028,
+      -0.002275423464572395
+    ],
+    "std": [
+      1.453969762575001,
+      1.4537905367737658
+    ],
+    "channels": [
+      "I",
+      "Q"
+    ],
+    "computed_on": "clean signals of the training split only (float64, population std)",
+    "n_values_per_channel": 51118080
+  },
+  "usage": "x_norm[c,t] = (x[c,t] - mean[c]) / (std[c] + 1e-8); apply the same statistics to clean, noisy and restored signals of every split (global normalization used in XCoRe-Net)."
+}

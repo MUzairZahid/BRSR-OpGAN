@@ -1,0 +1,10 @@
+Epoch 0: train SNR: 6.28 dB, validation SNR: 6.20 dB
+Epoch 10: train SNR: 7.87 dB, validation SNR: 7.75 dB
+Epoch 20: train SNR: 8.41 dB, validation SNR: 8.27 dB
+Epoch 30: train SNR: 8.62 dB, validation SNR: 8.46 dB
+Epoch 40: train SNR: 8.52 dB, validation SNR: 8.33 dB
+Epoch 50: train SNR: 8.66 dB, validation SNR: 8.45 dB
+Epoch 60: train SNR: 8.92 dB, validation SNR: 8.70 dB
+Epoch 70: train SNR: 8.96 dB, validation SNR: 8.73 dB
+
+

@@ -1,4 +1,6 @@
-# Radar Signal Dataset Generation
+# Radar Signal Dataset Generation (MATLAB)
+
+> **Looking for the BRSR dataset?** Download the official benchmark from Zenodo ([DOI 10.5281/zenodo.23010395](https://doi.org/10.5281/zenodo.23010395)) with `python download_data.py` in the repository root. The scripts in this folder were not seeded, so running them produces *new* BRSR-style data, not the published benchmark. The Python `DataPreparation_*.py` scripts are the original preparation step (MATLAB output → pickle) and are kept for reference; the released HDF5 files replace them.
 
 This directory contains MATLAB scripts for generating baseline and extended radar signal datasets used in BRSR-OpGAN research.
 
@@ -165,10 +167,13 @@ If you use these datasets in your research, please cite our papers:
 
 ```bibtex
 @article{zahid2024brsr,
-  title={Brsr-opgan: Blind radar signal restoration using operational generative adversarial network},
+  title={{BRSR-OpGAN}: Blind radar signal restoration using operational generative adversarial network},
   author={Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
-  journal={arXiv preprint arXiv:2407.13949},
-  year={2024}
+  journal={Neural Networks},
+  volume={190},
+  pages={107709},
+  year={2025},
+  doi={10.1016/j.neunet.2025.107709}
 }
 ```
 

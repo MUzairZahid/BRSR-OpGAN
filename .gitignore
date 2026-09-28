@@ -1,0 +1,14 @@
+# downloaded data, training runs and evaluation outputs
+data/
+runs/
+results/
+*.part
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

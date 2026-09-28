@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from fastonn import SelfONN1d as SelfONN1dlayer
+from selfonn import SelfONN1d as SelfONN1dlayer
 
 
 #___________________________________________________________________________________________________________________________
@@ -323,35 +323,10 @@ class ResidualDiscriminator(nn.Module):
 
 
 if __name__ == '__main__':
-    # Example inputs
-    time_input = torch.randn(16, 2, 1024)  # (Batch size, Channels, Length)
-
-
-    # Initialize the model
-    G = ResidualGenerator(q=1)
-    D = ResidualDiscriminator(q=1)
-
-    # Forward pass
-    time_output = G(time_input)
-    output = D(time_input)
-
-    print("_" * 32)
-    print("Time Domain Models.")
-    print(f"Time output shape: {time_output.shape}")  # Expected: [16, 2, 1024]
-    print(f"Discriminator output shape: {output.shape}")  # Expected: [16, 1]
-    print("_" * 32)
-
-    # Calculate the total number of parameters
-    total_params = sum(p.numel() for p in G.parameters() if p.requires_grad)
-    print(f"Total number of parameters: {total_params}")
-
-    total_params_k = total_params / 1000
-    print(f"G parameters (K): {total_params_k:.2f}K")
-
-
-    # Calculate the total number of parameters
-    total_params_D = sum(p.numel() for p in D.parameters() if p.requires_grad)
-    print(f"D parameters: {total_params_D}")
-
-    total_params_k_D = total_params_D / 1000
-    print(f"D parameters (K): {total_params_k_D:.2f}K")
+    # Quick shape and parameter-count check
+    x = torch.randn(4, 2, 1024)
+    for q in (1, 3):
+        G, D = ResidualGenerator(q=q), ResidualDiscriminator(q=q)
+        print(f"q={q}: G out {tuple(G(x).shape)}, D out {tuple(D(x).shape)}, "
+              f"G params {sum(p.numel() for p in G.parameters())/1e3:.2f}K, "
+              f"D params {sum(p.numel() for p in D.parameters())/1e3:.2f}K")

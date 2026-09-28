@@ -1,154 +1,153 @@
-# BRSR-OpGAN: Blind Radar Signal Restoration using Operational GAN
+# BRSR-OpGAN: Blind Radar Signal Restoration using Operational Generative Adversarial Network
 
-This repository contains the official implementation of BRSR-OpGAN (Blind Radar Signal Restoration using Operational Generative Adversarial Network), a novel approach for restoring radar signals corrupted by various artifacts without making prior assumptions about the corruption type or severity.
+[![Paper](https://img.shields.io/badge/Neural%20Networks-2025-blue)](https://doi.org/10.1016/j.neunet.2025.107709)
+[![arXiv](https://img.shields.io/badge/arXiv-2407.13949-b31b1b)](https://arxiv.org/abs/2407.13949)
+[![Dataset DOI](https://img.shields.io/badge/BRSR%20dataset-10.5281%2Fzenodo.23010395-1682D4)](https://doi.org/10.5281/zenodo.23010395)
+[![License: MIT](https://img.shields.io/badge/code-MIT-green)](LICENSE)
 
-## Project Overview
+Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 107709) and home of the **BRSR dataset**, the Blind Radar Signal Restoration benchmark. BRSR-OpGAN restores radar signals corrupted by an unknown blend of **additive white Gaussian noise (AWGN)**, **echo** and **co-channel interference (CCI)**. It makes no assumption about the type or severity of the corruption (blind restoration). It is a 1D **Operational GAN** built from **Self-Organized Operational Neural Network (Self-ONN)** layers and trained with a **dual-domain (time + frequency) loss**.
 
-BRSR-OpGAN ([paper link](https://arxiv.org/abs/2407.13949)) is a novel approach for restoring radar signals corrupted by various artifacts without making prior assumptions about the corruption type or severity.
+This repository provides:
 
-BRSR-OpGAN can restore radar signals corrupted by:
-- Additive White Gaussian Noise (AWGN)
-- Echo
-- Co-Channel Interference (CCI)
-- Any blend of these artifacts
+- the **BRSR dataset** download (85,800 paired clean/corrupted radar signals, 12 LPI radar waveform classes; hosted on Zenodo);
+- **pre-trained models**: BRSR-OpGAN (time, dual-domain, 2-pass) and CNN-GAN baselines, for both the BRSR and the AWGN-Baseline dataset;
+- **training and evaluation code** that reproduces the paper's results, plus reference results per SNR bin, artifact type and modulation class;
+- the MATLAB **radar signal data generation** code.
 
-This makes it ideal for real-world radar applications where corruption types and severity are often unknown in advance.
+The same dataset is used by the follow-up works **CoRe-Net** and **XCoRe-Net** (see [Related work](#related-work)).
 
-For more details, please see our papers:
-- [BRSR-OpGAN: Blind Radar Signal Restoration using Operational Generative Adversarial Network](https://arxiv.org/abs/2407.13949)
-- [CoRe-Net: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration](https://arxiv.org/abs/2501.17125)
+---
 
+## BRSR dataset
 
-## Setup
+**Download:** [Zenodo, DOI 10.5281/zenodo.23010395](https://doi.org/10.5281/zenodo.23010395) (CC BY 4.0), or run `python download_data.py`.
 
-### Requirements
+| | BRSR (blind) | AWGN-Baseline |
+|---|---|---|
+| Corruption | random blend of AWGN, echo and CCI (7 combinations) | AWGN only |
+| Input SNR | continuous, uniform in [−14, 10] dB | 13 levels, −14 : 2 : 10 dB |
+| Signals | 2 × 1024 complex I/Q samples at 100 MHz | same |
+| Classes | 12 LPI radar waveforms: LFM, Costas, BPSK, Frank, P1–P4, T1–T4 | same |
+| Splits | 49,920 train / 12,480 validation / 23,400 test | same |
 
-#### MATLAB (for data generation)
-- MATLAB R2019b or later
-- Signal Processing Toolbox
-- Time-Frequency Toolbox (tftb-0.2)
-
-#### Python (for training and testing)
-- Python 3.7+
-- PyTorch 1.7+
-- FastONN (SelfONN implementation)
-- NumPy
-- SciPy
-- Matplotlib
-- h5py
-- scikit-learn
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/BRSR-OpGAN.git
-cd BRSR-OpGAN
-```
-
-2. Install Python dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Install FastONN (for SelfONN layer implementation):
-```bash
-pip install fastonn
-```
-
-## Dataset Generation and Preparation
-
-The dataset consists of radar signals with 12 different waveform types corrupted by various artifacts. For detailed instructions on data generation, please refer to the [data generation README](data_generation/README.md).
-
-### Quick Data Generation Steps
-
-1. Generate the dataset using MATLAB:
-```matlab
-cd data_generation
-addpath 'waveform-types'
-run DataGeneration_Baseline.m   % For AWGN-only dataset
-run DataGeneration_Extended.m    % For mixed artifacts dataset
-```
-
-2. Process the dataset using Python:
-```bash
-cd data_generation
-python DataPreparation_Baseline.py
-python DataPreparation_Extended.py
-```
-
-**Note:** The complete datasets and pre-trained models are available upon request. Please contact the authors.
-
-## Training
-
-Use `train.py` to train the BRSR-OpGAN model with various configuration options:
-
-```bash
-python train.py --model residual --Q 3 --mode train --epochs 1000 --lambda_recon 100 --lambda_freq 2 --batch_size 64 --device cuda --dataset extended
-```
-
-### Command-line Arguments
-
-- `--model`: Choose model architecture (`simple` or `residual`)
-- `--Q`: SelfONN parameter (set to 1 for conventional CNN)
-- `--mode`: Operation mode (`train`, `evaluate`, or `both`)
-- `--epochs`: Number of training epochs
-- `--lambda_recon`: Reconstruction loss weight
-- `--lambda_freq`: Frequency domain loss weight (set to 0 to disable)
-- `--batch_size`: Training batch size
-- `--device`: Device to use (`cuda` or `cpu`)
-- `--out_folder`: Output folder for saved weights and logs
-- `--data_folder`: Folder containing the dataset
-- `--dataset`: Dataset type (`base` or `extended`)
-- `--normalize`: Enable data normalization
-
-## Testing
-
-Use `test_BRSR-OpGAN.py` to evaluate trained models:
-
-```bash
-python test_BRSR-OpGAN.py --data_folder Prepared_Dataset --dataset extended --batch_size 32 --output_dir results/
-```
-
-This script can evaluate multiple models simultaneously for comparison. To test a single model, you can modify the `model_configs_info` dictionary in the script to include only your model of interest.
-
-### Modifying for a Single Model
-
-For testing a single model, modify the `model_configs_info` dictionary:
+Each split is an HDF5 file with `clean`, `noisy`, `label`, `snr_db` and, for BRSR, the individual artifact components `distortions` (AWGN, echo, CCI). Per-sample metadata (SNR bin, artifact composition and weights, echo delay, interference ID) is in `*_metadata.csv`. These files are the exact data used in the papers. The original generator was not seeded, so please use the released splits.
 
 ```python
-model_configs_info = {
-    'BRSR-OpGAN (Q=3)': {
-        'paths': ['path/to/your/model.pth'],
-        'q': 3
-    }
-}
+from data import load_split
+test = load_split("data", "brsr", "test")          # dict of numpy arrays
+test["clean"].shape, test["noisy"].shape           # (23400, 2, 1024) each
 ```
+
+## Quick start
+
+```bash
+git clone https://github.com/MUzairZahid/BRSR-OpGAN.git
+cd BRSR-OpGAN
+pip install -r requirements.txt
+
+python download_data.py --dataset brsr --splits test   # ~0.6 GB, enough for evaluation
+python evaluate.py --dataset brsr                      # reproduces Tables 2 and 3 of the paper
+```
+
+Train from scratch (full dataset: `python download_data.py`):
+
+```bash
+python train.py --dataset brsr --Q 3 --lambda_freq 2      # BRSR-OpGAN, dual-domain loss
+python train.py --dataset brsr --Q 3 --lambda_freq 0      # time-domain loss only
+python train.py --dataset brsr --Q 1                      # CNN-GAN baseline
+python train.py --dataset brsr --Q 3 --first_pass pretrained_weights/brsr/BRSR_OpGAN_Q3_Dual_Domain.pth   # 2nd pass
+python evaluate.py --dataset brsr --checkpoint runs/<run>/generator_best.pth --q 3
+```
+
+Paper settings: Adam, learning rate 5·10⁻⁴, batch size 64, up to 1000 epochs, Q = 3; the model with the best validation SNR is kept.
+
+## Pre-trained models and results
+
+`pretrained_weights/brsr/` and `pretrained_weights/awgn_baseline/` contain the generators used in the paper, with their original training logs. `python evaluate.py` reproduces the numbers below; full results by SNR bin, artifact composition and modulation class are in [`reference_results/`](reference_results).
+
+**BRSR dataset, test split (23,400 signals):**
+
+| Model | SNR (dB) | PSNR (dB) | MSE | SI-SDR (dB)* |
+|---|---|---|---|---|
+| Corrupted input | −1.94 | 4.19 | 9.65 | −2.02 |
+| CNN-GAN-T | 8.87 | 14.99 | 0.39 | 6.93 |
+| CNN-GAN-D | 9.04 | 15.16 | 0.42 | 7.04 |
+| BRSR-OpGAN-T | 9.53 | 15.66 | 0.34 | 7.96 |
+| BRSR-OpGAN-D | 10.33 | 16.46 | 0.32 | 8.78 |
+| **BRSR-OpGAN-D-2P** | **12.36** | **18.49** | **0.23** | **10.93** |
+
+**AWGN-Baseline, test split, restored SNR (dB) at selected input SNRs:**
+
+| Model | −14 dB | −8 dB | −2 dB | 4 dB | 10 dB |
+|---|---|---|---|---|---|
+| CNN-GAN-T | 1.29 | 6.00 | 11.36 | 15.71 | 18.64 |
+| CNN-GAN-D | 1.39 | 6.07 | 11.31 | 15.62 | 18.59 |
+| BRSR-OpGAN-T | 1.28 | 6.74 | 12.16 | 16.47 | 19.43 |
+| BRSR-OpGAN-D | 1.22 | 6.68 | 12.11 | 16.47 | 19.49 |
+
+T = time-domain loss, D = dual-domain loss, 2P = second restoration pass. SNR, PSNR and MSE follow the paper's evaluation protocol. \*SI-SDR is an additional blind metric (see below). The BRSR numbers match Tables 2 and 3 of the paper to within 0.04 dB. The AWGN-Baseline checkpoints differ from Table 1 of the paper by at most 0.09 dB.
+
+## Evaluation protocol
+
+The paper follows the per-signal protocol that was common at the time. Each signal is min–max scaled to [−1, 1] per channel. The network output is mapped back to physical units with the **clean** signal's min/max before SNR, PSNR and MSE are computed. That rescaling uses reference information that is not available in blind deployment. In our later work (XCoRe-Net) we therefore use global normalization with training-set statistics ([`docs/norm_stats.json`](docs/norm_stats.json)). `evaluate.py` reports the paper metrics together with two blind metrics: SI-SDR, and SNR after rescaling with the noisy signal's range. Details: [docs/EVALUATION_PROTOCOL.md](docs/EVALUATION_PROTOCOL.md).
+
+## Repository structure
+
+```
+BRSR-OpGAN/
+├── models.py              # ResidualGenerator / ResidualDiscriminator (1D Self-ONN U-Net GAN)
+├── selfonn.py             # 1D Self-ONN layer (Q-th order operational neuron)
+├── data.py                # HDF5 loading, per-signal normalization, DataLoaders
+├── utils.py               # dual-domain training loop, SNR, spectrogram loss
+├── train.py               # training (incl. 2nd pass)
+├── evaluate.py            # evaluation and grouped results
+├── download_data.py       # BRSR dataset download from Zenodo with checksum check
+├── pretrained_weights/    # released generators (+ original training logs)
+├── reference_results/     # test results of the released generators
+├── docs/                  # evaluation protocol, normalization statistics
+└── data_generation/       # MATLAB radar waveform + artifact generator
+```
+
+## Related work
+
+- **CoRe-Net**: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration. [arXiv:2501.17125](https://arxiv.org/abs/2501.17125)
+- **XCoRe-Net**: Expert Co-Operational Regressor Networks for High-Fidelity Restoration of Radar Signals.
+
+Both are evaluated on the same BRSR dataset and splits.
 
 ## Citation
 
-If you use this code or find it helpful for your research, please cite our papers:
+If you use this code, the pre-trained models or the BRSR dataset, please cite:
 
 ```bibtex
-@article{zahid2024brsr,
-  title={BRSR-OpGAN: Blind Radar Signal Restoration using Operational Generative Adversarial Network},
-  author={Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
-  journal={arXiv preprint arXiv:2407.13949},
-  year={2024}
+@article{zahid2025brsropgan,
+  title   = {{BRSR-OpGAN}: Blind radar signal restoration using operational generative adversarial network},
+  author  = {Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
+  journal = {Neural Networks},
+  volume  = {190},
+  pages   = {107709},
+  year    = {2025},
+  doi     = {10.1016/j.neunet.2025.107709}
+}
+
+@dataset{zahid2026brsr_dataset,
+  title     = {{BRSR} Dataset: Blind Radar Signal Restoration Benchmark (v1.0) for {BRSR-OpGAN}, {CoRe-Net} and {XCoRe-Net}},
+  author    = {Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
+  publisher = {Zenodo},
+  version   = {1.0},
+  year      = {2026},
+  doi       = {10.5281/zenodo.23010395}
 }
 ```
 
-```bibtex
-@article{zahid2025core,
-  title={CoRe-Net: Co-Operational Regressor Network with Progressive Transfer Learning for Blind Radar Signal Restoration},
-  author={Zahid, Muhammad Uzair and Kiranyaz, Serkan and Yildirim, Alper and Gabbouj, Moncef},
-  journal={arXiv preprint arXiv:2501.17125},
-  year={2025}
-}
-```
+## License
 
+Code: MIT (see [LICENSE](LICENSE)). BRSR dataset: CC BY 4.0 (Zenodo).
 
 ## Contact
 
-For any questions or to request datasets and pre-trained models, please contact:
-- Muhammad Uzair Zahid - [muhammaduzair.zahid@tuni.fi]
+Please open a GitHub issue, or contact Muhammad Uzair Zahid (muhammaduzair.zahid@tuni.fi).
+
+---
+
+**Keywords:** BRSR-OpGAN, BRSR dataset, Blind Radar Signal Restoration, radar signal restoration, radar signal denoising, radar denoising deep learning, echo removal, co-channel interference suppression, operational GAN, OpGAN, Self-ONN, operational neural networks, generative adversarial network, LPI radar waveforms, radar waveform dataset, I/Q signals, CoRe-Net, XCoRe-Net, PyTorch.

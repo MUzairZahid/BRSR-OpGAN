@@ -1,0 +1,6 @@
+avg_snr_noisy: -1.860171
+avg_snr_restored: 12.359041
+avg_mse_noisy: 9.648743
+avg_mse_restored: 0.225553
+avg_psnr_noisy: -1.265490
+avg_psnr_restored: 13.034833

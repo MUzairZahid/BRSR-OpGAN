@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+title: "BRSR-OpGAN: Blind Radar Signal Restoration using Operational Generative Adversarial Network"
+message: "If you use this code, the pre-trained models or the BRSR dataset, please cite the paper and the dataset."
+type: software
+authors:
+  - family-names: Zahid
+    given-names: Muhammad Uzair
+  - family-names: Kiranyaz
+    given-names: Serkan
+  - family-names: Yildirim
+    given-names: Alper
+  - family-names: Gabbouj
+    given-names: Moncef
+repository-code: "https://github.com/MUzairZahid/BRSR-OpGAN"
+license: MIT
+keywords:
+  - BRSR-OpGAN
+  - BRSR dataset
+  - blind radar signal restoration
+  - radar signal denoising
+  - operational neural networks
+  - Self-ONN
+  - generative adversarial network
+  - CoRe-Net
+  - XCoRe-Net
+preferred-citation:
+  type: article
+  title: "BRSR-OpGAN: Blind radar signal restoration using operational generative adversarial network"
+  authors:
+    - family-names: Zahid
+      given-names: Muhammad Uzair
+    - family-names: Kiranyaz
+      given-names: Serkan
+    - family-names: Yildirim
+      given-names: Alper
+    - family-names: Gabbouj
+      given-names: Moncef
+  journal: "Neural Networks"
+  volume: 190
+  start: 107709
+  year: 2025
+  doi: "10.1016/j.neunet.2025.107709"
+references:
+  - type: data
+    title: "BRSR Dataset: Blind Radar Signal Restoration Benchmark (v1.0) for BRSR-OpGAN, CoRe-Net and XCoRe-Net"
+    authors:
+      - family-names: Zahid
+        given-names: Muhammad Uzair
+      - family-names: Kiranyaz
+        given-names: Serkan
+      - family-names: Yildirim
+        given-names: Alper
+      - family-names: Gabbouj
+        given-names: Moncef
+    publisher:
+      name: Zenodo
+    version: "1.0"
+    year: 2026
+    doi: "10.5281/zenodo.23010395"

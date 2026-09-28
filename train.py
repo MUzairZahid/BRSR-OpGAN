@@ -1,74 +1,78 @@
+"""Train BRSR-OpGAN (or the CNN-GAN baseline with --Q 1) on the BRSR benchmark.
+
+Examples
+--------
+# BRSR-OpGAN, dual-domain loss, on the BRSR dataset (paper setting)
+python train.py --dataset brsr --Q 3 --lambda_freq 2
+
+# Time-domain loss only
+python train.py --dataset brsr --Q 3 --lambda_freq 0
+
+# CNN-GAN baseline
+python train.py --dataset brsr --Q 1
+
+# Second restoration pass (BRSR-OpGAN-D-2P): train on the outputs of a trained first pass
+python train.py --dataset brsr --Q 3 --first_pass pretrained_weights/brsr/BRSR_OpGAN_Q3_Dual_Domain.pth
+"""
 import argparse
 import os
+
 import torch
-import torch.nn as nn
-from utils import *
+
+from data import make_dataloaders
+from models import ResidualGenerator
+from utils import initialize_models, save_config, train_dual_loss
+
+HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def main():
-    # Setup command-line arguments for configuring the training and evaluation process
-    parser = argparse.ArgumentParser(description='Train and/or Evaluate a BRSR-OpGAN model on a dataset')
-    parser.add_argument('--model', type=str, choices=['simple', 'residual'], default='residual', help='Choose the model architecture: Residual or simple')
-    parser.add_argument('--Q', type=int, default=3, help='Set q value for SelfONN layers, with 1 representing a conventional CNN.')
-    parser.add_argument('--mode', type=str, choices=['train', 'evaluate', 'both'], default='both', help='Define operation mode: train, evaluate, or both.')
-    parser.add_argument('--epochs', type=int, default=1000, help='Specify the number of training epochs.')
-    parser.add_argument('--lambda_recon', type=float, default=100, help='Reconstruction loss weight.')
-    parser.add_argument('--lambda_freq', type=int, default=2, help='Frequency loss weight.')
-    parser.add_argument('--batch_size', type=int, default=64, help='Training batch size.')
-    parser.add_argument('--device', type=str, default='cuda', help='Select the computation device: cpu or cuda.')
-    parser.add_argument('--out_folder', type=str, default='saved_weights', help='Output folder for saving model weights and logs.')
-    parser.add_argument('--data_folder', type=str, default='./data_generation/Prepared_Dataset/', help='Folder containing the dataset.')
-    parser.add_argument('--dataset', type=str, choices=['base', 'extended'], default='extended', help='Choose the dataset: base or extended.')
-    parser.add_argument('--normalize', type=bool, default=True, help='Enable data normalization.')
-    
-    args = parser.parse_args()
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--dataset", choices=["brsr", "awgn_baseline"], default="brsr")
+    ap.add_argument("--data_dir", default=os.path.join(HERE, "data"))
+    ap.add_argument("--model", choices=["residual", "simple"], default="residual")
+    ap.add_argument("--Q", type=int, default=3, help="Self-ONN order (1 = conventional CNN)")
+    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--batch_size", type=int, default=64)
+    ap.add_argument("--lr", type=float, default=5e-4)
+    ap.add_argument("--lambda_recon", type=float, default=100.0, help="reconstruction loss weight")
+    ap.add_argument("--lambda_freq", type=float, default=2.0, help="frequency loss weight (0 = time domain only)")
+    ap.add_argument("--no_normalize", action="store_true", help="disable per-signal min-max scaling")
+    ap.add_argument("--first_pass", default=None, help="trained first-pass generator (enables 2nd-pass training)")
+    ap.add_argument("--first_pass_q", type=int, default=None, help="Q of the first-pass generator (default: --Q)")
+    ap.add_argument("--eval_every", type=int, default=10)
+    ap.add_argument("--no_eval_train", action="store_true", help="skip train-split SNR during evaluation (faster)")
+    ap.add_argument("--num_workers", type=int, default=2)
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--out_dir", default=None)
+    args = ap.parse_args()
 
-    # Construct the path for the dataset based on the user's choices.
-    dataset_filename = f"{args.dataset}_dataset.pickle"
-    dataset_path = os.path.join(args.data_folder, dataset_filename)
-    print(f"Selected dataset filename: {dataset_filename}")
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
+    tag = f"{'2P_' if args.first_pass else ''}q{args.Q}_F{args.lambda_freq:g}_BS{args.batch_size}_{args.model}_{args.dataset}"
+    args.out_dir = args.out_dir or os.path.join(HERE, "runs", tag)
+    os.makedirs(args.out_dir, exist_ok=True)
+    save_config(args, os.path.join(args.out_dir, "config.json"))
+    print(f"Output folder: {args.out_dir}")
 
-    # Update and log the output directory name to reflect the configuration specifics
-    args.out_folder = f"{args.out_folder}_BS{args.batch_size}_F{args.lambda_freq}_q{args.Q}_{args.model}_{args.dataset}"
-    print(f"Configured output folder: {args.out_folder}")
-    os.makedirs(args.out_folder, exist_ok=True)  # Ensure the output directory exists
-
-    # Initialize models based on the provided configuration
+    loaders = make_dataloaders(args.data_dir, args.dataset, args.batch_size, splits=("train", "validation"),
+                               normalize=not args.no_normalize, num_workers=args.num_workers,
+                               pin_memory=args.device.startswith("cuda"))
     G, D = initialize_models(args.model, args.Q, args.device)
+    pre = None
+    if args.first_pass:
+        pre = ResidualGenerator(q=args.first_pass_q or args.Q)
+        pre.load_state_dict(torch.load(args.first_pass, map_location="cpu"), strict=True)
+        pre = pre.to(args.device)
 
-    # Train or evaluate the model based on the specified mode
-    if args.mode in ['train', 'both']:
-        # Train the model
-        train_dual_loss(G, D, args.epochs, args.lambda_recon, args.batch_size, args.device, args.out_folder, args.normalize, dataset_path, args.lambda_freq)
+    best = train_dual_loss(G, D, loaders, args.epochs, args.lambda_recon, args.lambda_freq, args.device,
+                           args.out_dir, eval_every=args.eval_every, eval_train=not args.no_eval_train,
+                           pre_model=pre, lr=args.lr)
+    chain = f"{args.first_pass} {best}" if args.first_pass else best
+    print(f"\nBest generator: {best}\nEvaluate it with:\n"
+          f"  python evaluate.py --dataset {args.dataset} --checkpoint {chain} --q {args.Q}")
 
-    if args.mode in ['evaluate', 'both']:
-        # Prepare the dataset for evaluation
-        dataloaders = load_and_prepare_dataset(batch_size=64, dataset_path=dataset_path, normalize=args.normalize, num_workers=1, pin_memory=True)
-        logging_file_path = os.path.join(args.out_folder, 'average_snr_values.txt')
-        best_model_path = load_textfile_and_find_best_model(logging_file_path, args.out_folder)
-        
-        G.load_state_dict(torch.load(best_model_path, map_location=args.device))
-
-        # Write results to a text file in the specified output folder
-        results_file_path = os.path.join(args.out_folder, 'evaluation_results.txt')
-
-        # Evaluate the model on the specified dataset
-        if args.dataset == "base":
-            results = evaluate_model_on_test_data_awgn(G, dataloaders, args.device)
-            with open(results_file_path, 'w') as file:
-                for snr_level, values in results.items():
-                    mean_snr = np.mean(values)
-                    file.write(f'True SNR {snr_level} dB: Mean Restored SNR: {mean_snr:.2f} dB\n')
-        elif args.dataset == "extended":
-            results = evaluate_model_on_test_data_blind(G, dataloaders, args.device)
-            with open(results_file_path, 'w') as file:
-                for key, value in results.items():
-                    file.write(f'{key}: {value:.6f}\n')
-
-
-
-
-        print(f'Results saved to {results_file_path}')
 
 if __name__ == "__main__":
     main()
