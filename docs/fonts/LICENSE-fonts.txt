@@ -1,0 +1,16 @@
+Fonts bundled for the Signal Observatory page (docs/signal_observatory.html).
+Both are licensed under the SIL Open Font License, Version 1.1
+(https://scripts.sil.org/OFL). Files are the Latin variable-weight subsets
+published by Fontsource (https://fontsource.org).
+
+inter-latin-wght-normal.woff2
+  Inter — Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+
+jetbrains-mono-latin-wght-normal.woff2
+  JetBrains Mono — Copyright 2020 The JetBrains Mono Project Authors
+  (https://github.com/JetBrains/JetBrainsMono)
+
+The fonts are embedded (base64) into the built page by scripts/make_signal_observatory.py
+so the page works offline as a single file; the woff2 files here are the sources.
+
+Full upstream licence texts: OFL-Inter.txt and OFL-JetBrains-Mono.txt.

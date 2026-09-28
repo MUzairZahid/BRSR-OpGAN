@@ -11,7 +11,7 @@ The released models were trained and evaluated with this protocol, and `evaluate
 - MSE = mean|restored − clean|² in physical units.
 - PSNR = 10·log10( peak² / MSE ), where the peak is the largest |clean| value within each block of 32 consecutive test signals (the batch size of the original evaluation script).
 
-With the released weights and the released test split, this reproduces Table 2 (within 0.03 dB SNR and 0.01 MSE), Table 3 (within 0.04 dB) and Fig. 6 (mean / median SNR improvement of 14.30 / 13.66 dB) of the paper. On AWGN-Baseline, the released checkpoints match their original evaluation logs and are within 0.09 dB of Table 1.
+With the released weights and the released test split, this reproduces Table 2 (within 0.03 dB SNR and 0.01 MSE), Table 3 (within 0.04 dB) and Fig. 6 (mean / median SNR improvement of 14.30 / 13.66 dB) of the paper.
 
 ## Additional metric
 
@@ -22,6 +22,6 @@ For BRSR-OpGAN-D-2P on the BRSR test split: SNR 12.36 dB and SI-SDR 10.93 dB (co
 ## Reporting groups
 
 - **BRSR**: overall; six 4-dB input-SNR bins with edges −14, −10, −6, −2, 2, 6, 10 dB (`snr_bin` in the metadata); the 7 artifact compositions (`composition`); the 12 modulation classes.
-- **AWGN-Baseline**: the 13 input-SNR levels (−14 : 2 : 10 dB); the 12 modulation classes.
+- **AWGN-Baseline** (when evaluating your own checkpoint): the 13 input-SNR levels (−14 : 2 : 10 dB); the 12 modulation classes.
 
 `evaluate.py` writes all of these to `results/<dataset>/<dataset>_test_summary.csv` when the metadata CSV is in the data folder.

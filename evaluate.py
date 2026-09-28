@@ -5,9 +5,6 @@ Examples
 # All released models on BRSR (reproduces Tables 2 and 3 of the paper)
 python evaluate.py --dataset brsr
 
-# All released models on AWGN-Baseline (Table 1)
-python evaluate.py --dataset awgn_baseline
-
 # Your own checkpoint (add a second path for a 2-pass model)
 python evaluate.py --dataset brsr --checkpoint runs/my_run/generator_best.pth --q 3
 
@@ -40,12 +37,6 @@ MODEL_ZOO = {
         "BRSR-OpGAN-T": (3, ["BRSR_OpGAN_Q3_Time_Domain.pth"]),
         "BRSR-OpGAN-D": (3, ["BRSR_OpGAN_Q3_Dual_Domain.pth"]),
         "BRSR-OpGAN-D-2P": (3, ["BRSR_OpGAN_Q3_Dual_Domain.pth", "BRSR_OpGAN_Q3_Dual_Domain_2ndPass.pth"]),
-    },
-    "awgn_baseline": {
-        "CNN-GAN-T": (1, ["CNN_GAN_Time_Domain.pth"]),
-        "CNN-GAN-D": (1, ["CNN_GAN_Dual_Domain.pth"]),
-        "BRSR-OpGAN-T": (3, ["BRSR_OpGAN_Q3_Time_Domain.pth"]),
-        "BRSR-OpGAN-D": (3, ["BRSR_OpGAN_Q3_Dual_Domain.pth"]),
     },
 }
 SNR_BINS = ["[-14,-10)", "[-10,-6)", "[-6,-2)", "[-2,2)", "[2,6)", "[6,10]"]
@@ -154,10 +145,11 @@ def summarize(per, models, dataset, meta):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", choices=list(MODEL_ZOO), default="brsr")
+    ap.add_argument("--dataset", choices=["brsr", "awgn_baseline"], default="brsr",
+                    help="released weights exist for brsr only; awgn_baseline requires --checkpoint")
     ap.add_argument("--data_dir", default=os.path.join(HERE, "data"))
     ap.add_argument("--weights_dir", default=os.path.join(HERE, "pretrained_weights"),
-                    help="folder with brsr/ and awgn_baseline/ subfolders")
+                    help="folder with the brsr/ subfolder of released weights")
     ap.add_argument("--models", nargs="*", default=None, help="subset of released model names (default: all)")
     ap.add_argument("--checkpoint", nargs="+", default=None,
                     help="evaluate your own generator(s) instead; several paths are applied in sequence")
@@ -169,6 +161,8 @@ def main():
     if args.checkpoint:
         models = {"custom": (args.q, args.checkpoint)}
     else:
+        if args.dataset not in MODEL_ZOO:
+            ap.error(f"no released weights for {args.dataset}; pass --checkpoint")
         zoo = MODEL_ZOO[args.dataset]
         names = args.models or list(zoo)
         models = {n: (zoo[n][0], [os.path.join(args.weights_dir, args.dataset, f) for f in zoo[n][1]]) for n in names}

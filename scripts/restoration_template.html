@@ -3,524 +3,941 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BRSR-OpGAN: blind radar signal restoration, step by step</title>
-<meta name="description" content="Interactive animation: a real test signal of the BRSR (Blind Radar Signal Restoration) benchmark is corrupted by echo, co-channel interference and AWGN, then restored by BRSR-OpGAN, an operational GAN built from Self-ONN layers (Neural Networks, 2025).">
-<meta property="og:title" content="BRSR-OpGAN: blind radar signal restoration">
-<meta property="og:description" content="A real BRSR test signal, corrupted by the radar channel and restored by BRSR-OpGAN.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f3ee">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1419">
+<title>Restoration Observatory · BRSR-OpGAN</title>
+<meta name="description" content="Released BRSR test signals restored by the released BRSR-OpGAN-D-2P weights: reveal the echo, co-channel interference and AWGN of a real test row, then compare clean, received and restored signals in time and frequency.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Restoration Observatory · BRSR-OpGAN">
+<meta property="og:description" content="A real BRSR test signal, corrupted by echo, interference and noise, and restored by BRSR-OpGAN. Compare clean, received and restored, with the residual error.">
+<meta property="og:image" content="https://muzairzahid.github.io/BRSR-OpGAN/figures/restoration/og_restoration.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">
 <style>
-:root{--ivory:#faf9f5;--paper:#fffefb;--ink:#141413;--ink2:#3f3e3a;--muted:#5f5e58;--line:#e3dfd3;--line2:#dcd8cc;
-  --clean:#2a78d6;--echo:#8a5cc9;--cci:#eb6834;--noise:#8a8983;--rest:#1baf7a;
-  --sans:'IBM Plex Sans','Helvetica Neue',Helvetica,sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;--serif:Newsreader,Georgia,serif}
+__FONT_CSS__
+__THEME_CSS__
+:root{
+  --font-sans:Inter,'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,Menlo,monospace;
+  --radius:12px;--radius-sm:8px;--gutter:clamp(16px,3vw,40px);--rail:300px;
+}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--ivory);color:var(--ink);font-family:var(--sans)}
-main{padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
-#fit{position:relative;overflow:hidden}
-#board{position:absolute;left:0;top:0;width:1440px;height:900px;padding:40px;background:var(--ivory);display:flex;flex-direction:column;gap:20px;transform-origin:0 0}
-body.record main{padding:0}
-body.record footer{display:none}
-button{font-family:inherit;cursor:pointer;color:inherit}
-button:focus-visible{outline:2px solid var(--clean);outline-offset:2px}
-.mono{font-family:var(--mono)}
-header.top{height:72px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px}
-.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--muted)}
-h1{margin:6px 0 0;font-family:var(--serif);font-weight:500;font-size:38px;line-height:1.05;letter-spacing:-.01em}
-.controls{display:flex;align-items:center;gap:16px}
-.seg{display:flex;gap:4px;padding:4px;border:1px solid var(--line2);border-radius:12px;background:var(--paper)}
-.seg button{height:44px;min-width:80px;padding:0 14px;border:none;border-radius:9px;font-size:15px;font-weight:500;background:transparent}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--ivory)}
-#play{height:52px;padding:0 20px;display:flex;align-items:center;gap:10px;border:1px solid var(--ink);border-radius:12px;background:var(--ink);color:var(--ivory);font-size:15px;font-weight:500}
-#restart{width:52px;height:52px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2);border-radius:12px;background:var(--paper)}
-.card{border:1px solid var(--line);border-radius:16px;background:var(--paper)}
-#scene{width:1360px;height:320px;overflow:hidden}
-#scene svg{display:block}
-.stepper{height:52px;display:flex;align-items:center;gap:20px}
-.steps{display:flex;gap:6px}
-.steps button{height:46px;padding:0 14px 0 9px;display:flex;align-items:center;gap:9px;border-radius:23px;border:1px solid var(--line2);background:var(--paper);color:var(--muted);font-size:14px;font-weight:500}
-.steps button .n{width:26px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;background:#b3afa3;color:#fff}
-.steps button.done{color:var(--ink);border-color:#8f8b7e}
-.steps button.cur{background:var(--ink);color:var(--ivory);border-color:var(--ink)}
-#caption{margin:0;flex:1;font-size:14px;line-height:1.45;color:var(--ink2)}
-.bottom{height:320px;display:flex;gap:20px}
-.panel{padding:20px;display:flex;flex-direction:column;gap:12px}
-.ptitle{height:20px;display:flex;justify-content:space-between;align-items:center}
-.ptitle b{font-size:14px;font-weight:600}
-.legend{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--ink2)}
-.legend span{display:flex;align-items:center;gap:6px}
-.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.chip{height:54px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;justify-content:space-between}
-.chip .row{display:flex;justify-content:space-between;font-size:13px}
-.chip .row b{font-weight:600}
-.chip .track{height:6px;border-radius:3px;background:#efece2;overflow:hidden}
-.chip .bar{height:6px;border-radius:3px;width:0}
-.specbox{position:relative;width:520px;height:211px;border-radius:8px;overflow:hidden;background:#f3f1ea}
-.specbox .wait{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted)}
-.specbox .layer{position:absolute;inset:0}
-.specbox img{position:absolute;left:0;top:0;width:520px;height:211px;opacity:0}
-.axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--muted)}
-footer{max-width:1440px;width:100%;display:flex;flex-wrap:wrap;gap:4px 20px;justify-content:center;font-size:13px;line-height:1.5;color:var(--ink2)}
-footer a{color:#1d5ea8}
-footer a:hover{color:#0d366b}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 15px/1.55 var(--font-sans);font-feature-settings:'cv11','ss01';}
+h1,h2,h3{font-weight:600;letter-spacing:-.015em;margin:0}
+p{margin:0}
+a{color:var(--accent);text-underline-offset:3px}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+button,a,input,select,summary,[tabindex]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:4px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:12px;top:-60px;background:var(--surface);color:var(--ink);padding:10px 14px;border:1px solid var(--line2);border-radius:var(--radius-sm);z-index:50}
+.skip:focus{top:12px}
+.wrap{max-width:1440px;margin:0 auto;padding:0 var(--gutter)}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.micro{font:600 11px/1.2 var(--font-mono);letter-spacing:.08em;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* ---- header / hero ---- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand svg{width:26px;height:26px}
+.brand span{font-weight:400;color:var(--muted)}
+.topnav{display:flex;align-items:center;gap:4px}
+.topnav a{color:var(--muted);text-decoration:none;font-size:14px;padding:8px 10px;border-radius:var(--radius-sm);min-height:36px;display:inline-flex;align-items:center;gap:6px}
+.topnav a:hover{color:var(--ink);background:var(--surface2)}
+.topnav a[aria-current=page]{color:var(--ink);background:var(--surface2);font-weight:500}
+.topnav .num{font:600 11px var(--font-mono);color:var(--muted)}
+.iconbtn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line2);border-radius:var(--radius-sm);background:var(--surface)}
+.iconbtn svg{width:18px;height:18px}
+.hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px;padding:28px 0 20px}
+.hero h1{font-size:clamp(26px,3.2vw,38px);line-height:1.12;max-width:26ch}
+.hero .lede{color:var(--ink2);max-width:62ch;margin-top:8px}
+.hero .prov{color:var(--muted);font-size:13px;max-width:62ch;margin-top:8px}
+.eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--clean)}
+.badge{border:1px solid var(--line2);border-radius:var(--radius);padding:10px 14px;background:var(--surface);font-size:13px;color:var(--ink2);line-height:1.5}
+.badge b{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--ink);margin-bottom:2px}
+
+/* ---- waveform picker ---- */
+.picker{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:8px 0 16px}
+.chips{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;padding:4px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;flex:1 1 560px}
+.chips button{min-height:36px;padding:0 6px;border-radius:7px;font:500 13px var(--font-mono);color:var(--ink2)}
+.chips button:hover{background:var(--surface)}
+.chips button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:600}
+.samplebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.samplebar b{font-weight:600}
+.pill{font:500 11px/1 var(--font-mono);letter-spacing:.06em;border:1px solid var(--line2);border-radius:20px;padding:7px 10px;color:var(--muted);white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:var(--radius-sm);background:var(--surface);font-size:14px;font-weight:500}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn svg{width:14px;height:14px}
+
+/* ---- workspace ---- */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);gap:20px;align-items:start}
+.content{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.cardhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 12px}
+.cardhead h2{font-size:17px}
+.cardhead .live{display:flex;align-items:center;gap:6px;white-space:nowrap;flex:none;color:var(--muted);font:600 11px var(--font-mono);letter-spacing:.06em}
+.cardhead .live i{width:6px;height:6px;border-radius:50%;background:var(--echo)}
+.section{margin-top:22px}
+.sectionhead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 12px}
+.sectionhead h2{font-size:19px}
+.sectionhead p{color:var(--muted);font-size:14px}
+.numbered{color:var(--muted);font-family:var(--font-mono);font-weight:500;margin-right:8px}
+
+/* rail */
+.rail{position:sticky;top:16px;display:flex;flex-direction:column;gap:14px}
+.rail .card{padding:18px 20px}
+.rail h2{font-size:16px}
+.rail .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin-top:12px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink)}
+.alloc{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.component{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;min-height:32px}
+.component .name{display:flex;align-items:center;gap:10px;font-weight:500}
+.swatch{width:26px;height:0;border-top:3px solid var(--c);flex:none}
+.swatch.echo{border-top-style:dashed}.swatch.cci{border-top-style:dashed}.swatch.awgn{border-top-style:dotted}
+.component output{font:500 13px var(--font-mono);color:var(--ink2);text-align:right;min-width:52px}
+.component .track{grid-column:1/-1;height:4px;background:var(--surface2);border-radius:2px;margin:-2px 0 6px 0;overflow:hidden}
+.component .track span{display:block;height:100%;border-radius:2px;background:var(--c);transition:width .25s}
+.mixnote{color:var(--muted);font-size:13px;line-height:1.5;margin-top:10px}
+.snrbig{display:flex;align-items:baseline;gap:10px;margin:12px 0 2px;font:500 30px/1 var(--font-sans);letter-spacing:-.03em}
+.snrbig small{font:500 13px var(--font-mono);color:var(--muted);letter-spacing:0}
+.snrbig .arrow{color:var(--faint);font-size:20px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+.seg button{min-height:34px;padding:0 12px;font-size:13px;color:var(--ink2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.railtoggle{display:none}
+
+/* scene */
+.scene{padding:6px 12px 0;background:radial-gradient(ellipse at 62% 60%,color-mix(in srgb,var(--clean) 8%,transparent),transparent 60%)}
+.scene svg{display:block;width:100%;height:auto}
+.scene svg.defs{width:0;height:0}
+.scene .mobile{display:none}
+.scene text{font-family:var(--font-sans)}
+.env-label{fill:var(--ink);font-size:14px;font-weight:600}
+.env-small{fill:var(--muted);font-family:var(--font-mono);font-size:11px}
+.env-node{cursor:pointer;outline:none;transition:opacity .25s}
+.env-node.off{opacity:.3}
+.env-node .ring{fill:var(--surface);stroke:var(--line2);stroke-width:1.2}
+.env-node:hover .ring{stroke:var(--c)}
+.env-node[aria-pressed=true] .ring{stroke:var(--c);stroke-width:2.2}
+.env-node:focus-visible .ring{stroke:var(--focus);stroke-width:3}
+.env-node .sym{fill:none;stroke:var(--c);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.env-node text{pointer-events:none}
+.rx .ring{fill:var(--surface);stroke:var(--ink2)}
+.rx .sym{stroke:var(--ink)}
+.model .ring{fill:var(--surface);stroke:var(--ink2);stroke-width:1.4}
+.model .bar{fill:var(--surface2);stroke:var(--line2);stroke-width:1;transition:fill .3s,stroke .3s}
+.model.lit .bar{fill:color-mix(in srgb,var(--clean) 45%,var(--surface));stroke:var(--clean)}
+.model.running .bar{animation:sweep 1.4s linear 2}
+.model .bar:nth-child(2){animation-delay:.1s}.model .bar:nth-child(3){animation-delay:.2s}.model .bar:nth-child(4){animation-delay:.3s}.model .bar:nth-child(5){animation-delay:.4s}.model .bar:nth-child(6){animation-delay:.5s}.model .bar:nth-child(7){animation-delay:.6s}.model .bar:nth-child(8){animation-delay:.7s}.model .bar:nth-child(9){animation-delay:.8s}
+@keyframes sweep{0%,60%{fill:var(--surface2);stroke:var(--line2)}10%,30%{fill:color-mix(in srgb,var(--clean) 70%,var(--surface));stroke:var(--clean)}}
+.wire{fill:none;stroke:var(--c);stroke-width:2;stroke-linecap:round;transition:opacity .2s}
+.wire.echo{stroke-dasharray:var(--dash-echo)}.wire.cci{stroke-dasharray:var(--dash-cci)}.wire.awgn{stroke-dasharray:var(--dash-awgn)}
+.wire.rx{stroke-dasharray:5 7}.wire.rest{stroke-dasharray:5 7}
+.ground{stroke:var(--line2);stroke-width:1;fill:none}
+.particle{fill:var(--c);transition:opacity .2s}
+.wirelabel{font:600 11px var(--font-mono);letter-spacing:.06em;fill:var(--ink2)}
+.inspectbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 20px 4px}
+.inspectbar .micro{margin-right:6px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--ink2);background:var(--surface)}
+.chip i{width:14px;height:0;border-top:3px solid var(--c)}
+.chip.echo i,.chip.cci i{border-top-style:dashed}.chip.awgn i{border-top-style:dotted}
+.chip:hover{border-color:var(--faint)}
+.chip[aria-pressed=true]{border-color:var(--ink);color:var(--ink);background:var(--surface2)}
+.inspectcopy{padding:8px 20px 14px;color:var(--ink2);font-size:14px;min-height:44px}
+.scenefoot{display:flex;justify-content:space-between;gap:16px;padding:10px 20px;border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+.scenefoot span:last-child{white-space:nowrap;flex:none}
+.transport{padding:14px 20px 16px;border-top:1px solid var(--line);background:var(--surface2)}
+.transportrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.steps{display:flex;flex:1 1 360px;gap:4px}
+.steps button{flex:1;min-height:36px;padding:0 8px;border:1px solid transparent;border-radius:var(--radius-sm);font-size:13px;color:var(--muted);white-space:nowrap}
+.steps button:hover{background:var(--surface)}
+.steps button[aria-current=step]{background:var(--surface);border-color:var(--line2);color:var(--ink);font-weight:500}
+.steps .num{font:600 11px var(--font-mono);margin-right:6px;color:var(--muted)}
+.progress{height:3px;background:var(--line);margin:12px 0 10px;border-radius:2px;overflow:hidden}
+.progress div{height:100%;width:0;background:var(--accent)}
+.narration{display:grid;grid-template-columns:150px 1fr;gap:12px;align-items:start;min-height:44px}
+.narration strong{font-weight:600}
+.narration p{color:var(--ink2);font-size:14px}
+.playbacknote{color:var(--muted);font-size:12.5px;margin-bottom:8px}
+
+/* comparison */
+.viewcontrols{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.viewcontrols label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line2);border-radius:var(--radius-sm);padding:7px 10px;min-height:36px}
+.chartgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;transition:opacity .16s}
+.chartgrid.fading{opacity:.25}
+.chartcard{position:relative;transition:box-shadow .2s}
+.chartcard .cardhead{padding-bottom:6px}
+.targetcard{border-top:3px solid var(--clean)}
+.inputcard{border-top:3px solid var(--received)}
+.restcard{border-top:3px solid var(--clean)}
+.rescard{border-top:3px solid var(--residual)}
+.chartcard.pending .chartpad{opacity:.3;filter:grayscale(.4)}
+.chartcard .pendingnote{display:none;position:absolute;inset:auto 0 0 0;top:56px;align-items:center;justify-content:center;font-size:14px;color:var(--ink2);pointer-events:none}
+.chartcard.pending .pendingnote{display:flex}
+.cardtag{font:500 12px var(--font-mono);color:var(--muted)}
+.chartpad{padding:0 12px 14px;transition:opacity .25s}
+.plotlabel{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 10px;padding:8px 8px 6px;color:var(--muted);font-size:12.5px}
+.plotlabel b{color:var(--ink2);font-weight:500;white-space:nowrap}.windowLabel{white-space:nowrap}
+.plotwrap{position:relative}
+canvas.chart{display:block;width:100%;height:190px;border-radius:6px;touch-action:pan-y;cursor:crosshair}
+canvas.spec{display:block;width:100%;height:170px;border-radius:6px;cursor:crosshair}
+canvas:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.tip{position:absolute;pointer-events:none;z-index:5;background:var(--ink);color:var(--bg);font:12px/1.45 var(--font-mono);padding:8px 10px;border-radius:6px;white-space:pre;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .08s;max-width:calc(100% - 8px);white-space:pre-wrap;overflow-wrap:anywhere}
+.tip.on{opacity:1}
+.tip .k{opacity:.7}
+.legend{display:flex;flex-wrap:wrap;gap:12px;padding:6px 8px 0;color:var(--muted);font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:16px;height:0;border-top:2.5px solid var(--c)}
+.legend i.dashed{border-top-style:dashed}.legend i.echo,.legend i.cci{border-top-style:dashed}.legend i.awgn{border-top-style:dotted}
+.colorbar{display:flex;align-items:center;gap:8px;white-space:nowrap;flex:none;font:500 11px var(--font-mono);color:var(--muted)}
+.colorbar canvas{width:96px;height:8px;border-radius:2px}
+.swipewrap{position:relative}
+.swipewrap input[type=range]{position:absolute;left:0;right:0;bottom:-4px;margin:0;width:100%;height:28px;background:none;-webkit-appearance:none;appearance:none;cursor:ew-resize}
+.swipewrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--ink);border:2px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.swipewrap input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--ink);border:2px solid var(--surface)}
+.swipewrap input[type=range]::-webkit-slider-runnable-track{height:2px;background:transparent}
+.swipewrap input[type=range]::-moz-range-track{height:2px;background:transparent}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);margin-top:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.stat{padding:14px 18px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat label{display:block;font:600 11px var(--font-mono);letter-spacing:.08em;color:var(--muted)}
+.stat output{display:block;font:500 22px/1.2 var(--font-sans);letter-spacing:-.02em;margin-top:6px}
+.stat output small{font:500 13px var(--font-mono);color:var(--muted);margin-left:4px}
+.selectionnote{color:var(--muted);font-size:13px;margin-top:10px}
+.equation{font:500 15px var(--font-mono);margin-top:18px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline}
+.equation .c,.equation .e,.equation .i,.equation .a,.equation .r{border-bottom:3px solid var(--c);padding-bottom:1px}.equation .c{--c:var(--clean)}.equation .e{--c:var(--echo);border-bottom-style:dashed}.equation .i{--c:var(--cci);border-bottom-style:dashed}.equation .a{--c:var(--awgn);border-bottom-style:dotted}.equation .r{--c:var(--clean)}
+.equation small{font:13px var(--font-sans);color:var(--muted)}
+
+/* table & provenance */
+details{border-top:1px solid var(--line);padding:14px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:500;padding:6px 0;list-style:none;display:flex;align-items:center;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'';width:8px;height:8px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);transition:transform .15s;margin-left:4px}
+details[open] summary::before{transform:rotate(45deg)}
+.tablewrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:var(--radius-sm);margin-top:12px}
+table{border-collapse:collapse;width:100%;font:12.5px var(--font-mono);font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--surface2);color:var(--ink2);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+.tableactions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.method{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:12px 0 4px;color:var(--ink2);font-size:14px;line-height:1.65}
+.method p{margin:8px 0}
+.method b{color:var(--ink)}
+.method code{font:12.5px var(--font-mono);color:var(--ink)}
+.provenance{font:12.5px/1.7 var(--font-mono);padding:10px 12px;background:var(--surface2);border-radius:var(--radius-sm);margin-top:8px}
+.nextcard{margin-top:22px;padding:18px 20px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.nextcard p{color:var(--ink2);font-size:14px;max-width:70ch}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 20px;padding:26px 0 40px;color:var(--muted);font-size:13px}
+footer a{color:var(--muted);display:inline-block;padding:4px 0}
+.bootnotice{padding:12px 16px;border:1px solid var(--cci);border-radius:var(--radius-sm);color:var(--ink);font-size:14px;margin:12px 0}
+.motion-running .wire.flow{animation:wire-flow 1s linear infinite}
+@keyframes wire-flow{to{stroke-dashoffset:-18}}
+
+/* ---- responsive ---- */
+@media (max-width:1180px){:root{--rail:260px}.narration{grid-template-columns:1fr}.chips button{font-size:12px}}
+@media (max-width:980px){
+  .workspace{grid-template-columns:minmax(0,1fr)}
+  .rail{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:40;gap:0}
+  .rail .card{border-radius:14px 14px 0 0;border-bottom:0;padding:10px 16px 14px;box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+  .rail .card+.card{display:none}
+  .rail.collapsed .railbody{display:none}
+  .railtoggle{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;min-height:40px;font-weight:500}
+  .railtoggle .summary{font:500 13px var(--font-mono);color:var(--ink2);display:flex;gap:10px;flex-wrap:wrap}
+  .railtoggle svg{width:16px;height:16px;transition:transform .2s}
+  .rail.collapsed .railtoggle svg{transform:rotate(180deg)}
+  .rail h2,.rail .sub{display:none}
+  .railbody .mobilemodel{display:block}
+  body{padding-bottom:88px}
+  body.rail-open{padding-bottom:330px}
+  .chartgrid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .method{grid-template-columns:1fr;gap:8px}
+}
+.mobilemodel{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+@media (max-width:640px){
+  .top{min-height:56px}
+  .topnav a.hide-sm{display:none}
+  .topnav a{padding:8px 7px;font-size:13px}
+  .topnav .num{display:none}
+  .topnav{gap:2px}
+  .brand span{display:none}
+  .cardhead h2{font-size:16px}
+  .steps{display:grid;grid-template-columns:1fr 1fr 1fr;flex-basis:100%}
+  .hero{padding:20px 0 14px}
+  .hero .badge{display:none}
+  .chips{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .chips button{min-height:38px}
+  .samplebar{width:100%;justify-content:space-between}
+  .scene .desktop{display:none}.scene .mobile{display:block}
+  .scene{padding:4px 4px 0}
+  .inspectbar{padding:10px 12px 0}
+  .inspectbar .micro{width:100%;margin-bottom:2px}
+  .chip{padding:0 10px;font-size:12.5px}
+  .inspectcopy,.scenefoot{padding-left:14px;padding-right:14px}
+  .scenefoot span:last-child{display:none}
+  .transport{padding:12px 14px 14px}
+  .cardhead{padding:14px 14px 8px}
+  .chartpad{padding:0 6px 10px}
+  canvas.chart{height:180px}canvas.spec{height:150px}
+  .seg button{padding:0 9px;font-size:12.5px}
+  .kv{font-size:12.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .chartgrid,.env-node,.wire,.particle,.component .track span,summary::before,.railtoggle svg,.model .bar{transition:none;animation:none!important}
+  .motion-running .wire.flow{animation:none}
+}
+@media print{
+  .top,.transport,.inspectbar,.rail,.picker .btn,.viewcontrols,footer,.skip,.tableactions,.swipewrap input{display:none!important}
+  body{background:#fff;color:#000}
+  .workspace{grid-template-columns:1fr}
+  .card{break-inside:avoid;border-color:#ccc}
+  details{break-inside:avoid}
+  details:not([open])>*:not(summary){display:block}
+}
 </style>
 </head>
 <body>
-<main>
-<div id="fit">
-<div id="board">
-
+<a class="skip" href="#main">Skip to the interactive sample</a>
+<div class="wrap">
 <header class="top">
-  <div>
-    <div class="kicker">BRSR-OpGAN · a real test signal of the BRSR benchmark</div>
-    <h1>One BRSR test signal: corrupted, then restored</h1>
-  </div>
-  <div class="controls">
-    <div class="seg" role="group" aria-label="Test signal">
-      __WF_BUTTONS__
-    </div>
-    <button type="button" id="play">
-      <svg id="icoPause" width="16" height="16" aria-hidden="true"><line x1="5" y1="3" x2="5" y2="13" stroke="#faf9f5" stroke-width="2.4" stroke-linecap="round"/><line x1="11" y1="3" x2="11" y2="13" stroke="#faf9f5" stroke-width="2.4" stroke-linecap="round"/></svg>
-      <svg id="icoPlay" width="16" height="16" aria-hidden="true" style="display:none"><path d="M4 2.5 L13.5 8 L4 13.5 Z" fill="none" stroke="#faf9f5" stroke-width="2" stroke-linejoin="round"/></svg>
-      <span id="playLabel">Pause</span>
-    </button>
-    <button type="button" id="restart" aria-label="Restart animation">
-      <svg width="20" height="20" aria-hidden="true"><path d="M4.5 10 A 5.5 5.5 0 1 0 6.2 6" fill="none" stroke="#141413" stroke-width="1.8" stroke-linecap="round"/><path d="M3.5 3.5 L6.4 6.2 L3.2 7.8" fill="none" stroke="#141413" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-  </div>
+  <a class="brand" href="#main"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-opacity=".35"/><path d="M4 18h5l3-8 5 15 4-10 3 3h4" fill="none" stroke="var(--clean)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>BRSR-OpGAN <span>/ Restoration Observatory</span></a>
+  <nav class="topnav" aria-label="BRSR chapters">
+    <a href="https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html"><span class="num">01</span>Generate ↗</a>
+    <a href="#main" aria-current="page"><span class="num">02</span>Restore</a>
+    <a class="hide-sm" href="https://github.com/MUzairZahid/BRSR-OpGAN">GitHub ↗</a>
+    <button class="iconbtn" id="themeToggle" type="button" aria-label="Switch to dark theme" title="Switch theme"><svg viewBox="0 0 20 20" aria-hidden="true"><path id="themeIcon" d="M10 3v2M10 15v2M3 10h2M15 10h2M5 5l1.4 1.4M13.6 13.6L15 15M5 15l1.4-1.4M13.6 6.4L15 5M10 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </nav>
 </header>
 
-<div id="scene" class="card">
-<svg width="1358" height="318" role="img" aria-label="Radar scene: an emitter sends a pulse to a receiver; a building reflects a delayed echo, a second emitter adds interference and the receiver adds noise; the received signal is then restored by BRSR-OpGAN">
-  <text x="24" y="306" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58">fs = 100 MHz · 1024 complex samples (10.24 µs) per signal</text>
-  <line x1="0" y1="280" x2="1358" y2="280" stroke="#b9b5a7" stroke-width="1.2"/>
-  <g id="ticks" stroke="#d9d5c8" stroke-width="1"></g>
-
-  <g fill="none" stroke="#cfcbbd" stroke-width="1.2" stroke-dasharray="4 6">
-    <polyline points="126,104 980,104"/>
-    <polyline points="126,104 454,198 980,104"/>
-    <polyline points="760,190 980,104"/>
-    <polyline points="986,104 1056,104"/>
-  </g>
-
-  <g fill="#efece2" stroke="#8f8b7e" stroke-width="1.2">
-    <rect x="370" y="236" width="44" height="44"/>
-    <rect x="430" y="198" width="48" height="82"/>
-    <rect x="486" y="226" width="38" height="54"/>
-    <rect x="530" y="248" width="30" height="32"/>
-  </g>
-  <g stroke="#cdc9bb" stroke-width="1">
-    <line x1="440" y1="216" x2="468" y2="216"/><line x1="440" y1="234" x2="468" y2="234"/><line x1="440" y1="252" x2="468" y2="252"/>
-    <line x1="380" y1="254" x2="404" y2="254"/><line x1="494" y1="244" x2="516" y2="244"/>
-  </g>
-
-  <g fill="none" stroke="#141413">
-    <polyline points="94,280 108,116 112,116 126,280" stroke-width="1.6" stroke-linejoin="round"/>
-    <polyline points="97,250 122,230 100,210 119,190 103,170 116,150 105,132" stroke-width="1"/>
-    <path d="M104 86 Q 130 104 104 122" stroke-width="2.2" stroke-linecap="round"/>
-    <line x1="108" y1="104" x2="124" y2="104" stroke-width="1.4"/>
-    <polyline points="980,280 994,116 998,116 1012,280" stroke-width="1.6" stroke-linejoin="round"/>
-    <polyline points="1009,250 984,230 1006,210 987,190 1003,170 990,150 1001,132" stroke-width="1"/>
-    <path d="M1002 86 Q 976 104 1002 122" stroke-width="2.2" stroke-linecap="round"/>
-    <line x1="982" y1="104" x2="998" y2="104" stroke-width="1.4"/>
-    <polyline points="750,280 759,204 761,204 770,280" stroke-width="1.4" stroke-linejoin="round"/>
-    <line x1="760" y1="204" x2="760" y2="194" stroke-width="1.4"/>
-    <path d="M749 180 Q 744 190 749 200" stroke-width="1.2" stroke-linecap="round"/>
-    <path d="M771 180 Q 776 190 771 200" stroke-width="1.2" stroke-linecap="round"/>
-  </g>
-  <circle cx="126" cy="104" r="3.2" fill="#2a78d6"/>
-  <circle cx="760" cy="190" r="4" fill="#eb6834"/>
-
-  <!-- the restoration model -->
-  <rect id="boxGlow" x="1050" y="38" width="272" height="140" rx="16" fill="#1baf7a" opacity="0"/>
-  <rect x="1056" y="44" width="260" height="128" rx="12" fill="#fffefb" stroke="#141413" stroke-width="1.4"/>
-  <text x="1072" y="68" font-family="IBM Plex Sans, Helvetica, sans-serif" font-size="14" font-weight="600" fill="#141413">BRSR-OpGAN-D-2P</text>
-  <text x="1072" y="85" font-family="IBM Plex Mono, monospace" font-size="11" fill="#5f5e58">Self-ONN U-Net · Q = 3</text>
-  <text id="passLbl" x="1300" y="68" font-family="IBM Plex Mono, monospace" font-size="11" fill="#127a55" text-anchor="end" opacity="0"></text>
-  <g id="bars"></g>
-  <line x1="1186" y1="172" x2="1186" y2="222" stroke="#cfcbbd" stroke-width="1.2" stroke-dasharray="4 6"/>
-
-  <g id="rings" fill="none" stroke-width="1.4"></g>
-
-  <g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-    <polyline id="trailD" stroke="#2a78d6" opacity="0"/>
-    <polyline id="trailE" stroke="#8a5cc9" opacity="0"/>
-    <polyline id="trailC" stroke="#eb6834" opacity="0"/>
-    <polyline id="trailM" stroke="#141413" opacity="0"/>
-    <polyline id="trailR" stroke="#1baf7a" opacity="0"/>
-  </g>
-
-  <g id="dots" fill="#6f6e68"></g>
-
-  <g fill="none" stroke-width="2.2" stroke-linejoin="round">
-    <polyline id="pktD" stroke="#2a78d6" opacity="0"/>
-    <polyline id="pktE" stroke="#8a5cc9" opacity="0"/>
-    <polyline id="pktC" stroke="#eb6834" opacity="0"/>
-    <polyline id="pktM" stroke="#141413" opacity="0"/>
-    <polyline id="pktR" stroke="#1baf7a" opacity="0"/>
-  </g>
-
-  <circle id="rxGlow" cx="980" cy="104" r="12" fill="#141413" opacity="0"/>
-  <circle cx="980" cy="104" r="3.6" fill="#141413"/>
-
-  <g font-family="IBM Plex Sans, Helvetica, sans-serif">
-    <g id="lblTx" opacity="0">
-      <text x="126" y="58" font-size="14" font-weight="600" fill="#141413" text-anchor="middle">Emitter</text>
-      <text id="txParams" x="126" y="75" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58" text-anchor="middle"></text>
-    </g>
-    <g id="lblDirect" opacity="0">
-      <text x="553" y="92" font-size="14" font-weight="600" fill="#1d5ea8" text-anchor="middle">Direct path · the clean pulse, which is the target</text>
-    </g>
-    <g id="lblEcho" opacity="0">
-      <text x="262" y="214" font-size="14" font-weight="600" fill="#6a3fae" text-anchor="middle">Echo · a delayed copy off a building</text>
-      <text id="echoDetail" x="262" y="232" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="middle"></text>
-    </g>
-    <g id="lblCci" opacity="0">
-      <text x="782" y="226" font-size="14" font-weight="600" fill="#b8491d">Co-channel interference</text>
-      <text id="cciDetail" x="782" y="244" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a"></text>
-    </g>
-    <g id="lblNoise" opacity="0">
-      <text id="noiseDetail" x="1030" y="306" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="end"></text>
-    </g>
-    <g id="lblRx" opacity="0">
-      <text x="980" y="58" font-size="14" font-weight="600" fill="#141413" text-anchor="middle">Receiver</text>
-      <text id="rxDetail" x="980" y="75" font-family="IBM Plex Mono, monospace" font-size="12" fill="#5f5e58" text-anchor="middle"></text>
-    </g>
-    <g id="lblOut" opacity="0">
-      <text x="1186" y="246" font-size="14" font-weight="600" fill="#127a55" text-anchor="middle">Restored output</text>
-      <text id="outDetail" x="1186" y="264" font-family="IBM Plex Mono, monospace" font-size="12" fill="#3f3e3a" text-anchor="middle"></text>
-    </g>
-  </g>
-</svg>
-</div>
-
-<div class="stepper">
-  <div class="steps" role="group" aria-label="Jump to a stage">
-    <button type="button" data-step="0"><span class="n">1</span><span>Transmit</span></button>
-    <button type="button" data-step="1"><span class="n">2</span><span>Echo</span></button>
-    <button type="button" data-step="2"><span class="n">3</span><span>Interference</span></button>
-    <button type="button" data-step="3"><span class="n">4</span><span>Noise</span></button>
-    <button type="button" data-step="4"><span class="n">5</span><span>Received</span></button>
-    <button type="button" data-step="5"><span class="n">6</span><span>Restored</span></button>
+<section class="hero" aria-labelledby="pageTitle">
+  <div>
+    <div class="eyebrow micro"><i></i>INSIDE THE BENCHMARK · INTERACTIVE STUDY 02</div>
+    <h1 id="pageTitle">A corrupted pulse, and what the model gives back.</h1>
+    <p class="lede">One released test signal, restored by the released weights. Reveal its echo, interference and noise in the radar environment, watch BRSR-OpGAN restore it, then compare clean, received and restored in time and frequency.</p>
+    <p class="prov">Rows of the released BRSR test split, restored by BRSR-OpGAN-D-2P. The <a href="https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html">generator chapter</a> shows newly seeded samples; the two pages do not show the same signal.</p>
   </div>
-  <p id="caption" aria-live="polite"></p>
+  <div class="badge"><b>RELEASED TEST SIGNALS · REAL MODEL OUTPUT</b>12 waveform classes · 36 test rows · 3 input-SNR bands<br>Evaluation protocol of the paper · released weights</div>
+</section>
+
+<main id="main">
+<p class="bootnotice" id="bootNotice" role="status">Starting interactive controls… If this message stays visible, reload in a browser with JavaScript enabled.</p>
+<noscript><p class="bootnotice">JavaScript is disabled. Enable it to use the waveform buttons and plots.</p></noscript>
+
+<div class="picker">
+  <div class="chips" role="group" aria-label="Choose a radar waveform class" id="chips"></div>
+  <div class="samplebar">
+    <b id="waveTitle"></b>
+    <span class="pill" id="rowTag"></span>
+    <span class="small muted" id="sampleCount" aria-live="polite"></span>
+    <button class="btn" id="nextSample" type="button">Next sample <svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+  </div>
 </div>
 
-<div class="bottom">
-  <div class="card panel" style="width:780px">
-    <div class="ptitle">
-      <b>I channel · first 160 of 1024 samples (1.6 µs)</b>
-      <div class="legend">
-        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#2a78d6" stroke-width="2" stroke-dasharray="4 3"/></svg>clean target</span>
-        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#141413" stroke-width="1.6"/></svg>received</span>
-        <span><svg width="22" height="8" aria-hidden="true"><line x1="0" y1="4" x2="22" y2="4" stroke="#1baf7a" stroke-width="2"/></svg>restored</span>
-      </div>
-    </div>
-    <svg width="740" height="170" role="img" aria-label="Waveform plot of the I channel: clean target, received and restored signal">
-      <line x1="0" y1="85" x2="740" y2="85" stroke="#e3dfd3" stroke-width="1"/>
-      <polyline id="plotRx" fill="none" stroke="#141413" stroke-width="1.4" stroke-linejoin="round"/>
-      <polyline id="plotRest" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linejoin="round" opacity="0"/>
-      <polyline id="plotClean" fill="none" stroke="#2a78d6" stroke-width="1.8" stroke-dasharray="5 3" opacity="0"/>
+<div class="workspace">
+<div class="content">
+
+<!-- 01 · scene -->
+<section class="card" aria-labelledby="sceneTitle">
+  <div class="cardhead"><h2 id="sceneTitle"><span class="numbered">01</span>Inside the radar environment, then the restorer</h2><span class="live"><i></i><span id="modeLabel">GUIDED REVEAL</span></span></div>
+  <div class="scene">
+    <svg class="defs" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="var(--line2)"/></pattern>
+        <symbol id="tower" viewBox="0 0 60 60"><path d="M22 52l8-34 8 34M25 40h10M27 30h6M30 18v-6M22 9q-8 8 0 16M38 9q8 8 0 16M15 4q-14 13 0 26M45 4q14 13 0 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="building" viewBox="0 0 60 60"><path d="M14 52V22l16-10 16 10v30ZM30 12v40M14 32h32M14 42h32M20 27h5M35 27h5M20 37h5M35 37h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="dish" viewBox="0 0 60 60"><path d="M18 18q0 24 24 24L22 22ZM32 40l-3 14M22 54h20M30 34l16-16M44 16l4 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="noise" viewBox="0 0 60 30"><path d="M4 15l5-6 5 12 6-20 6 26 6-16 6 7 6-5 6 4 6-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="pulse" viewBox="0 0 60 30"><path d="M4 15h8l3-9 4 18 4-18 4 18 4-18 4 18 3-9h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      </defs>
     </svg>
-    <div class="chips">
-      <div class="chip"><div class="row"><b style="color:#6a3fae">Echo</b><span class="mono" id="wE"></span></div><div class="track"><div class="bar" id="barE" style="background:#8a5cc9"></div></div></div>
-      <div class="chip"><div class="row"><b style="color:#b8491d">Interference</b><span class="mono" id="wC"></span></div><div class="track"><div class="bar" id="barC" style="background:#eb6834"></div></div></div>
-      <div class="chip"><div class="row"><b style="color:#3f3e3a">AWGN</b><span class="mono" id="wN"></span></div><div class="track"><div class="bar" id="barN" style="background:#8a8983"></div></div></div>
-      <div class="chip"><div class="row"><b style="color:#127a55">Restored</b><span class="mono" id="wR"></span></div><div class="track"><div class="bar" id="barR" style="background:#1baf7a"></div></div></div>
-    </div>
+    <!-- desktop scene -->
+    <svg class="desktop" viewBox="0 0 1100 340" role="group" aria-labelledby="sceneSvgTitle sceneSvgDesc">
+      <title id="sceneSvgTitle">Interactive radar environment and restorer, linked to the signal plots</title>
+      <desc id="sceneSvgDesc">A transmitter, an illustrative reflector, an interfering emitter and receiver noise feed one receiver; the received signal goes through the BRSR-OpGAN generator twice and comes out restored. Select a source, the model or the output to highlight it in the plots below. Geometry and moving particles are conceptual; no range or propagation is simulated.</desc>
+      <rect width="1100" height="340" fill="url(#dots)"/>
+      <path class="ground" d="M30 292H1070M60 306H1040M95 318H1005"/>
+      <path class="ground" d="M300 292l60-38h280l40 38" opacity=".7"/>
+      <path class="wire flow" data-wire="Clean" style="--c:var(--clean)" d="M170 210Q400 160 660 218"/>
+      <path class="wire flow echo" data-wire="Echo" style="--c:var(--echo)" d="M170 206L410 96L662 208"/>
+      <path class="wire flow cci" data-wire="Cci" style="--c:var(--cci)" d="M640 82Q740 100 700 200"/>
+      <path class="wire flow awgn" data-wire="Noise" style="--c:var(--awgn)" d="M570 274Q640 296 676 254"/>
+      <path class="wire flow rx" data-wire="Rx" style="--c:var(--received)" d="M752 232L836 232"/>
+      <path class="wire flow rest" data-wire="Rest" style="--c:var(--clean)" d="M962 232L1010 232"/>
+      <text x="370" y="197" class="wirelabel">CLEAN · x[n]</text>
+      <text x="240" y="132" class="wirelabel">ECHO · e[n]</text>
+      <text x="748" y="150" class="wirelabel">CCI · i[n]</text>
+      <text x="586" y="262" class="wirelabel">AWGN · a[n]</text>
+      <text x="794" y="222" text-anchor="middle" class="wirelabel">y[n]</text>
+      <text x="986" y="222" text-anchor="middle" class="wirelabel">ŷ[n]</text>
+      <g class="env-node" data-node="Clean" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the clean transmitted waveform" style="--c:var(--clean)">
+        <circle class="ring" cx="140" cy="236" r="54"/><use href="#tower" x="110" y="206" width="60" height="60" class="sym" style="color:var(--c)"/>
+        <text x="140" y="312" text-anchor="middle" class="env-label">Radar transmitter</text><text x="140" y="330" text-anchor="middle" class="env-small">x[n] · clean target</text>
+      </g>
+      <g class="env-node" data-node="Echo" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the echo" style="--c:var(--echo)">
+        <rect class="ring" x="360" y="38" width="100" height="100" rx="16"/><use href="#building" x="380" y="58" width="60" height="60" class="sym" style="color:var(--c)"/>
+        <text x="410" y="26" text-anchor="middle" class="env-label">Illustrative reflector</text><text x="410" y="156" text-anchor="middle" class="env-small" data-delay-label></text>
+      </g>
+      <g class="env-node" data-node="Cci" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the co-channel interference" style="--c:var(--cci)">
+        <circle class="ring" cx="630" cy="76" r="44"/><use href="#tower" x="604" y="50" width="52" height="52" class="sym" style="color:var(--c)"/>
+        <text x="688" y="66" class="env-label">Interferer</text><text x="688" y="84" class="env-small" data-cci-label></text>
+      </g>
+      <g class="env-node" data-node="Noise" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the receiver noise" style="--c:var(--awgn)">
+        <rect class="ring" x="470" y="256" width="104" height="44" rx="12"/><use href="#noise" x="492" y="263" width="60" height="30" class="sym" style="color:var(--c)"/>
+        <text x="522" y="322" text-anchor="middle" class="env-label">Receiver noise</text>
+      </g>
+      <g class="rx" style="--c:var(--ink)">
+        <circle class="ring" cx="708" cy="232" r="44"/><use href="#dish" x="682" y="206" width="52" height="52" class="sym"/>
+        <text x="708" y="298" text-anchor="middle" class="env-label">Receiver</text><text x="708" y="316" text-anchor="middle" class="env-small">y[n] = x + e + i + a</text>
+      </g>
+      <g class="env-node model" data-node="Model" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the restorer, BRSR-OpGAN-D-2P" style="--c:var(--clean)">
+        <rect class="ring" x="838" y="180" width="122" height="104" rx="14"/>
+        <g class="bars"><rect class="bar" x="852" y="212" width="8" height="40" rx="2"/><rect class="bar" x="864" y="218" width="8" height="28" rx="2"/><rect class="bar" x="876" y="224" width="8" height="16" rx="2"/><rect class="bar" x="888" y="228" width="8" height="8" rx="2"/><rect class="bar" x="900" y="230" width="8" height="4" rx="2"/><rect class="bar" x="912" y="228" width="8" height="8" rx="2"/><rect class="bar" x="924" y="224" width="8" height="16" rx="2"/><rect class="bar" x="936" y="218" width="8" height="28" rx="2"/><rect class="bar" x="948" y="212" width="8" height="40" rx="2"/></g>
+        <text x="899" y="312" text-anchor="middle" class="env-label">BRSR-OpGAN</text>
+      </g>
+      <g class="env-node" data-node="Restored" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the restored output" style="--c:var(--clean)">
+        <circle class="ring" cx="1046" cy="232" r="36"/><use href="#pulse" x="1020" y="217" width="52" height="30" class="sym" style="color:var(--c)"/>
+        <text x="1046" y="290" text-anchor="middle" class="env-label">Restored</text>
+      </g>
+      <circle class="particle" data-particle="Clean" r="4" style="--c:var(--clean)"/><circle class="particle" data-particle="Echo" r="4" style="--c:var(--echo)"/><circle class="particle" data-particle="Cci" r="4" style="--c:var(--cci)"/><circle class="particle" data-particle="Noise" r="4" style="--c:var(--awgn)"/><circle class="particle" data-particle="Rx" r="4" style="--c:var(--received)"/><circle class="particle" data-particle="Rest" r="4" style="--c:var(--clean)"/>
+    </svg>
+    <!-- compact vertical scene for narrow screens -->
+    <svg class="mobile" viewBox="0 0 360 560" role="group" aria-labelledby="sceneSvgTitle sceneSvgDesc">
+      <rect width="360" height="560" fill="url(#dots)"/>
+      <path class="wire flow" data-wire="Clean" style="--c:var(--clean)" d="M92 118Q150 250 180 318"/>
+      <path class="wire flow echo" data-wire="Echo" style="--c:var(--echo)" d="M100 94L268 84L196 318"/>
+      <path class="wire flow cci" data-wire="Cci" style="--c:var(--cci)" d="M296 188Q260 250 208 312"/>
+      <path class="wire flow awgn" data-wire="Noise" style="--c:var(--awgn)" d="M84 262Q120 300 164 316"/>
+      <path class="wire flow rx" data-wire="Rx" style="--c:var(--received)" d="M190 382L190 420"/>
+      <path class="wire flow rest" data-wire="Rest" style="--c:var(--clean)" d="M254 464L292 464"/>
+      <g class="env-node" data-node="Clean" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the clean transmitted waveform" style="--c:var(--clean)">
+        <circle class="ring" cx="70" cy="70" r="40"/><use href="#tower" x="48" y="48" width="44" height="44" class="sym" style="color:var(--c)"/>
+        <text x="70" y="128" text-anchor="middle" class="env-label" font-size="12">Transmitter</text>
+      </g>
+      <g class="env-node" data-node="Echo" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the echo" style="--c:var(--echo)">
+        <rect class="ring" x="232" y="30" width="80" height="80" rx="14"/><use href="#building" x="250" y="48" width="44" height="44" class="sym" style="color:var(--c)"/>
+        <text x="272" y="128" text-anchor="middle" class="env-label" font-size="12">Reflector</text>
+      </g>
+      <g class="env-node" data-node="Cci" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the co-channel interference" style="--c:var(--cci)">
+        <circle class="ring" cx="300" cy="190" r="36"/><use href="#tower" x="280" y="170" width="40" height="40" class="sym" style="color:var(--c)"/>
+        <text x="300" y="244" text-anchor="middle" class="env-label" font-size="12">Interferer</text>
+      </g>
+      <g class="env-node" data-node="Noise" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the receiver noise" style="--c:var(--awgn)">
+        <rect class="ring" x="32" y="232" width="88" height="40" rx="10"/><use href="#noise" x="50" y="238" width="52" height="28" class="sym" style="color:var(--c)"/>
+        <text x="76" y="292" text-anchor="middle" class="env-label" font-size="12">Rx noise</text>
+      </g>
+      <g class="rx" style="--c:var(--ink)">
+        <circle class="ring" cx="190" cy="340" r="42"/><use href="#dish" x="166" y="316" width="48" height="48" class="sym"/>
+        <text x="250" y="344" class="env-label" font-size="12">Receiver</text>
+      </g>
+      <g class="env-node model" data-node="Model" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the restorer, BRSR-OpGAN-D-2P" style="--c:var(--clean)">
+        <rect class="ring" x="126" y="424" width="128" height="80" rx="12"/>
+        <g class="bars"><rect class="bar" x="142" y="446" width="7" height="36" rx="2"/><rect class="bar" x="153" y="452" width="7" height="24" rx="2"/><rect class="bar" x="164" y="458" width="7" height="12" rx="2"/><rect class="bar" x="175" y="461" width="7" height="6" rx="2"/><rect class="bar" x="186" y="462" width="7" height="4" rx="2"/><rect class="bar" x="197" y="461" width="7" height="6" rx="2"/><rect class="bar" x="208" y="458" width="7" height="12" rx="2"/><rect class="bar" x="219" y="452" width="7" height="24" rx="2"/><rect class="bar" x="230" y="446" width="7" height="36" rx="2"/></g>
+        <text x="190" y="526" text-anchor="middle" class="env-label" font-size="12">BRSR-OpGAN</text>
+      </g>
+      <g class="env-node" data-node="Restored" role="button" tabindex="0" aria-pressed="false" aria-label="Inspect the restored output" style="--c:var(--clean)">
+        <circle class="ring" cx="318" cy="464" r="26"/><use href="#pulse" x="300" y="453" width="36" height="22" class="sym" style="color:var(--c)"/>
+        <text x="318" y="512" text-anchor="middle" class="env-label" font-size="12">Restored</text>
+      </g>
+      <circle class="particle" data-particle="Clean" r="4" style="--c:var(--clean)"/><circle class="particle" data-particle="Echo" r="4" style="--c:var(--echo)"/><circle class="particle" data-particle="Cci" r="4" style="--c:var(--cci)"/><circle class="particle" data-particle="Noise" r="4" style="--c:var(--awgn)"/><circle class="particle" data-particle="Rx" r="4" style="--c:var(--received)"/><circle class="particle" data-particle="Rest" r="4" style="--c:var(--clean)"/>
+    </svg>
   </div>
-
-  <div class="card panel" style="width:560px">
-    <div class="ptitle">
-      <b>Spectrogram · full 10.24 µs</b>
-      <span class="mono" id="specStage" style="font-size:12px;color:#3f3e3a"></span>
-    </div>
-    <div class="specbox">
-      <div class="wait">Waiting for the pulse to arrive</div>
-      <div class="layer" id="specLayer" style="opacity:0">
-        __SPEC_IMGS__
+  <div class="inspectbar" role="group" aria-label="Inspect a part of the chain in both views">
+    <span class="micro">INSPECT</span>
+    <button class="chip" type="button" data-inspect="All" aria-pressed="true">All paths</button>
+    <button class="chip clean" type="button" data-inspect="Clean" aria-pressed="false" style="--c:var(--clean)"><i></i>Clean</button>
+    <button class="chip echo" type="button" data-inspect="Echo" aria-pressed="false" style="--c:var(--echo)"><i></i>Echo</button>
+    <button class="chip cci" type="button" data-inspect="Cci" aria-pressed="false" style="--c:var(--cci)"><i></i>Interference</button>
+    <button class="chip awgn" type="button" data-inspect="Noise" aria-pressed="false" style="--c:var(--awgn)"><i></i>AWGN</button>
+    <button class="chip" type="button" data-inspect="Restored" aria-pressed="false" style="--c:var(--clean)"><i></i>Restored</button>
+  </div>
+  <p class="inspectcopy" id="inspectCopy" aria-live="polite"></p>
+  <div class="scenefoot"><span>Conceptual scene: no simulated ranges or propagation. The echo is the benchmark's delayed copy of the source waveform (delay τ); the restorer is the released two-pass generator.</span><span>Same signal in all views ↓</span></div>
+  <div class="transport">
+    <div class="transportrow">
+      <button class="btn primary" id="play" type="button"><svg viewBox="0 0 14 14" aria-hidden="true"><path id="playIcon" d="M4 2v10M10 2v10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span id="playText">Pause</span></button>
+      <button class="iconbtn" id="restart" type="button" aria-label="Restart the guided reveal"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6.5 6.5 0 1 1-1 6M3 2v6h6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <button class="btn" id="loop" type="button" aria-pressed="true">Loop on</button>
+      <div class="steps" role="group" aria-label="Reveal the chain in stages">
+        <button type="button" data-stage="0"><span class="num">01</span>Clean</button>
+        <button type="button" data-stage="1"><span class="num">02</span>Echo</button>
+        <button type="button" data-stage="2"><span class="num">03</span>Interference</button>
+        <button type="button" data-stage="3"><span class="num">04</span>Received</button>
+        <button type="button" data-stage="4"><span class="num">05</span>Restored</button>
       </div>
     </div>
-    <div class="axis"><span>time 0 → 10.24 µs</span><span>frequency −50 … 50 MHz</span></div>
+    <div class="progress" aria-hidden="true"><div id="progress"></div></div>
+    <p class="playbacknote" id="playbackNote"></p>
+    <div class="narration" aria-live="polite"><strong id="stageTitle"></strong><p id="stageCopy"></p></div>
   </div>
+</section>
+
+<!-- 02 · comparison -->
+<section class="section" aria-labelledby="cmpTitle">
+  <div class="sectionhead">
+    <div><h2 id="cmpTitle"><span class="numbered">02</span>The same signal: clean, received, restored</h2><p>Matched axes on all four plots. Hover or focus for sample values; drag on a waveform to zoom every plot.</p></div>
+    <div class="viewcontrols">
+      <label for="channel">Channel <select id="channel"><option value="0">I / real</option><option value="1">Q / imaginary</option></select></label>
+      <div class="seg" role="group" aria-label="Time range"><button type="button" data-range="160" aria-pressed="true">First 160</button><button type="button" data-range="512" aria-pressed="false">First 512</button><button type="button" data-range="1024" aria-pressed="false">All 1,024</button></div>
+    </div>
+  </div>
+  <div class="inspectbar" role="group" aria-label="Overlay a component on the received waveform" style="padding-left:0;padding-right:0">
+    <span class="micro">OVERLAY</span>
+    <button class="chip" type="button" data-inspect="All" aria-pressed="true">None</button>
+    <button class="chip clean" type="button" data-inspect="Clean" aria-pressed="false" style="--c:var(--clean)"><i></i>Clean</button>
+    <button class="chip echo" type="button" data-inspect="Echo" aria-pressed="false" style="--c:var(--echo)"><i></i>Echo</button>
+    <button class="chip cci" type="button" data-inspect="Cci" aria-pressed="false" style="--c:var(--cci)"><i></i>Interference</button>
+    <button class="chip awgn" type="button" data-inspect="Noise" aria-pressed="false" style="--c:var(--awgn)"><i></i>AWGN</button>
+  </div>
+  <div class="chartgrid" id="chartgrid">
+    <section class="card chartcard targetcard" id="targetCard" aria-labelledby="cleanTitle">
+      <div class="cardhead"><h2 id="cleanTitle">Clean target</h2><span class="cardtag">x[n] · reference</span></div>
+      <div class="chartpad">
+        <div class="plotlabel"><b><span class="channelLabel">I channel</span> · clean-RMS units</b><span class="windowLabel"></span></div>
+        <div class="plotwrap"><canvas id="cleanTimePlot" class="chart" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipCleanTime"></div></div>
+        <div class="plotlabel" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px"><b>Spectrogram · complex I + jQ</b><div class="colorbar"><span>−40</span><canvas class="cbar" width="96" height="8" aria-hidden="true"></canvas><span>0 dB</span></div></div>
+        <div class="plotwrap"><canvas id="cleanSpectrum" class="spec" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipCleanSpec"></div></div>
+      </div>
+    </section>
+    <section class="card chartcard inputcard" id="inputCard" aria-labelledby="receivedTitle">
+      <div class="cardhead"><h2 id="receivedTitle">Received input</h2><span class="cardtag">y[n] · <span id="specStage"></span></span></div>
+      <div class="chartpad">
+        <div class="plotlabel"><b><span class="channelLabel">I channel</span> · clean-RMS units</b><span class="windowLabel"></span></div>
+        <div class="plotwrap"><canvas id="timePlot" class="chart" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipTime"></div></div>
+        <div class="legend" id="legend"></div>
+        <div class="plotlabel" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px"><b>Spectrogram · complex I + jQ</b><div class="colorbar"><span>−40</span><canvas class="cbar" width="96" height="8" aria-hidden="true"></canvas><span>0 dB</span></div></div>
+        <div class="plotwrap"><canvas id="spectrum" class="spec" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipSpec"></div></div>
+      </div>
+    </section>
+    <section class="card chartcard restcard" id="restCard" aria-labelledby="restoredTitle">
+      <div class="cardhead"><h2 id="restoredTitle">Restored output</h2><span class="cardtag">ŷ[n] · <span id="passTag">after pass 2</span></span></div>
+      <div class="chartpad">
+        <div class="plotlabel"><b><span class="channelLabel">I channel</span> · clean-RMS units</b><span class="windowLabel"></span></div>
+        <div class="plotwrap"><canvas id="restTimePlot" class="chart" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipRestTime"></div></div>
+        <div class="legend"><span><i style="--c:var(--clean)"></i>Restored ŷ[n]</span><span><i class="dashed" style="--c:var(--clean)"></i>Clean target x[n]</span></div>
+        <div class="plotlabel" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px"><b>Spectrogram · complex I + jQ</b><div class="colorbar"><span>−40</span><canvas class="cbar" width="96" height="8" aria-hidden="true"></canvas><span>0 dB</span></div></div>
+        <div class="plotwrap"><canvas id="restSpectrum" class="spec" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipRestSpec"></div></div>
+      </div>
+      <div class="pendingnote">Restored at stage 05</div>
+    </section>
+    <section class="card chartcard rescard" id="resCard" aria-labelledby="residualTitle">
+      <div class="cardhead"><h2 id="residualTitle">Residual error</h2><span class="cardtag">y − x and ŷ − x</span></div>
+      <div class="chartpad">
+        <div class="plotlabel"><b><span class="channelLabel">I channel</span> · clean-RMS units</b><span class="windowLabel"></span></div>
+        <div class="plotwrap"><canvas id="resTimePlot" class="chart" tabindex="0" role="img" aria-describedby="liveSummary"></canvas><div class="tip" id="tipResTime"></div></div>
+        <div class="legend"><span><i style="--c:var(--received)"></i>Received − clean</span><span><i style="--c:var(--residual)"></i>Restored − clean</span></div>
+        <div class="plotlabel" style="margin-top:10px;border-top:1px solid var(--line);padding-top:12px"><b>Before / after · drag the divider</b><span class="muted small" id="swipeLabel">received | restored</span></div>
+        <div class="plotwrap swipewrap"><canvas id="swipeSpectrum" class="spec" role="img" aria-describedby="liveSummary" aria-label="Received and restored spectrograms side by side, split at an adjustable divider"></canvas><input type="range" id="swipe" min="0" max="100" value="50" aria-label="Before/after divider position (percent of the time axis)"><div class="tip" id="tipSwipe"></div></div>
+      </div>
+      <div class="pendingnote">Restored at stage 05</div>
+    </section>
+  </div>
+  <p class="selectionnote" id="selectionNote"></p>
+  <div class="stats" role="group" aria-label="Measurements of this test row">
+    <div class="stat"><label>INPUT SNR</label><output id="inputSnr"></output></div>
+    <div class="stat"><label>RESTORED SNR</label><output id="restoredSnr"></output></div>
+    <div class="stat"><label>IMPROVEMENT</label><output id="improvement"></output></div>
+    <div class="stat"><label>ECHO DELAY τ</label><output id="delayStat"></output></div>
+  </div>
+  <p class="sr-only" id="liveSummary" aria-live="polite"></p>
+  <p class="sr-only" id="cursorReadout" role="status" aria-live="polite" aria-atomic="true"></p>
+  <div class="equation">y[n] = <span class="c">x[n]</span> + <span class="e">e[n]</span> + <span class="i">i[n]</span> + <span class="a">a[n]</span> &nbsp;·&nbsp; <span class="r">ŷ[n]</span> = G₂(G₁(y[n]))<small>The received signal is the only input the model gets; the clean target is the reference it is scored against. SNR values follow the paper's evaluation protocol.</small></div>
+</section>
+
+<!-- 03 · data -->
+<section class="section" aria-labelledby="dataTitle">
+  <h2 id="dataTitle" class="sr-only">Sample data</h2>
+  <details id="tableDetails">
+    <summary>Table view of this test row (real values, clean-RMS units)</summary>
+    <div class="tableactions">
+      <button class="btn" id="downloadCsv" type="button"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Download this row (CSV, 1,024 samples)</button>
+      <span class="small muted" id="tableNote"></span>
+    </div>
+    <div class="tablewrap"><table id="sampleTable"><thead><tr><th scope="col">n</th><th scope="col">t (µs)</th><th scope="col">clean I</th><th scope="col">clean Q</th><th scope="col">echo I</th><th scope="col">echo Q</th><th scope="col">CCI I</th><th scope="col">CCI Q</th><th scope="col">AWGN I</th><th scope="col">AWGN Q</th><th scope="col">received I</th><th scope="col">received Q</th><th scope="col">restored I</th><th scope="col">restored Q</th></tr></thead><tbody></tbody></table></div>
+  </details>
+  <details>
+    <summary>Data provenance and what this page represents</summary>
+    <div class="method">
+      <div>
+        <b>Released data, released weights, real outputs.</b>
+        <p id="waveDescription"></p>
+        <p>Every row on this page is a row of the released BRSR test split (Zenodo, DOI 10.5281/zenodo.23010395): the clean target, the stored echo, co-channel interference and AWGN components, and the received signal. The restored signals are the outputs of the released <code>BRSR-OpGAN-D</code> generator weights after the first and the second pass, computed by <code>scripts/export_restoration_samples.py</code> and checked against <code>reference_results/brsr_test_per_sample.csv</code> to within 0.02 dB.</p>
+        <p id="selectionRule"></p>
+        <p>Signals are shown in units of clean RMS with one scale for every trace. Samples are stored in the page as 16-bit integers with a per-trace scale (maximum quantisation error below 3.1 × 10⁻⁵ of each trace's peak), which keeps this single file small enough to load on a phone.</p>
+        <div class="provenance" id="provenance"></div>
+      </div>
+      <div>
+        <b>What is measured.</b>
+        <p>Input and restored SNR follow the evaluation protocol of the BRSR-OpGAN paper (<code>docs/EVALUATION_PROTOCOL.md</code>): SNR = 10·log₁₀(mean|x|² / mean|ŷ − x|²) over both channels. The page recomputes them from the embedded samples; the numbers agree with the reference results.</p>
+        <p>The scene is a metaphor for the additive model of the benchmark. The echo is a delayed copy of the same source waveform (delay τ, in samples); no ranges, Doppler shifts or antenna patterns are simulated. The restorer box stands for the released Self-ONN U-Net generator (Q = 3) applied twice.</p>
+        <p>Spectrograms use a 64-point Hann window with a 4-sample hop over the complex signal (241 frames, centres 0.315–9.915 µs; bin centres −50 to +48.4 MHz), drawn at native resolution without smoothing. Colours are fixed from −40 to 0 dB relative to the clean spectrogram peak of the selected row; all panels share the scale.</p>
+        <p>This chapter and the <a href="https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html">generator chapter</a> use the same design and controls but different signals: the generator page shows newly seeded generator output, this page shows released test rows.</p>
+      </div>
+    </div>
+  </details>
+  <div class="card nextcard">
+    <p><b>How was this signal made?</b> The generator chapter builds a sample from scratch: waveform, echo, interference and noise, with the SNR under your control.</p>
+    <a class="btn" href="https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html">01 · Generate ↗</a>
+  </div>
+</section>
 </div>
 
+<!-- rail -->
+<aside class="rail" id="rail" aria-labelledby="rowTitle">
+  <div class="card">
+    <button class="railtoggle" id="railToggle" type="button" aria-expanded="true" aria-controls="railBody"><span class="summary" id="railSummary"></span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <div class="railbody" id="railBody">
+      <h2 id="rowTitle">This test row</h2>
+      <p class="sub">Composition stored in the released split</p>
+      <dl class="kv">
+        <dt>Test row</dt><dd id="kvRow"></dd>
+        <dt>Target SNR</dt><dd id="kvTarget"></dd>
+        <dt>Input SNR</dt><dd id="kvInput"></dd>
+        <dt>Echo delay τ</dt><dd id="kvDelay"></dd>
+        <dt>CCI signal</dt><dd id="kvCci"></dd>
+      </dl>
+      <div class="alloc">
+        <div class="micro" style="margin-bottom:8px">ARTIFACT POWER FRACTIONS</div>
+        <div class="component" style="--c:var(--echo)"><span class="name"><i class="swatch echo"></i>Echo</span><span></span><output id="weightEcho"></output><div class="track"><span id="barEcho"></span></div></div>
+        <div class="component" style="--c:var(--cci)"><span class="name"><i class="swatch cci"></i>Interference</span><span></span><output id="weightCci"></output><div class="track"><span id="barCci"></span></div></div>
+        <div class="component" style="--c:var(--awgn)"><span class="name"><i class="swatch awgn"></i>AWGN</span><span></span><output id="weightNoise"></output><div class="track"><span id="barNoise"></span></div></div>
+      </div>
+      <p class="mixnote">The mixture is fixed: it is the stored received signal the model was scored on. Use the stages to reveal its parts.</p>
+      <div class="mobilemodel">
+        <div class="micro" style="margin-bottom:8px">RESTORER · BRSR-OpGAN-D</div>
+        <div class="seg" role="group" aria-label="Restoration pass (mobile)"><button type="button" data-pass="1" aria-pressed="false">After pass 1</button><button type="button" data-pass="2" aria-pressed="true">After pass 2</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" aria-labelledby="modelTitle">
+    <h2 id="modelTitle">Restorer · BRSR-OpGAN-D</h2>
+    <p class="sub">Self-ONN U-Net, Q = 3, released weights</p>
+    <div class="snrbig"><span id="bigIn"></span><span class="arrow">→</span><span id="bigOut"></span><small>dB SNR</small></div>
+    <div class="seg" role="group" aria-label="Restoration pass" style="margin-top:10px"><button type="button" data-pass="1" aria-pressed="false">After pass 1</button><button type="button" data-pass="2" aria-pressed="true">After pass 2</button></div>
+    <p class="mixnote">The second pass feeds the first output through the second released generator; both outputs are real.</p>
+  </div>
+</aside>
 </div>
-</div>
-
-<footer>
-  <a href="https://github.com/MUzairZahid/BRSR-OpGAN">BRSR-OpGAN code and weights</a>
-  <a href="https://doi.org/10.1016/j.neunet.2025.107709">BRSR-OpGAN paper</a>
-  <a href="https://doi.org/10.5281/zenodo.23010395">BRSR dataset (Zenodo)</a>
-  <a href="https://muzairzahid.github.io/BRSR-DataGen/radar_environment.html">How BRSR data is generated</a>
-</footer>
 </main>
 
+<footer>
+  <span>BRSR-OpGAN · Restoration Observatory</span>
+  <span><a href="https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html">01 · Generate ↗</a> · <a href="https://doi.org/10.1016/j.neunet.2025.107709">Paper ↗</a> · <a href="https://doi.org/10.5281/zenodo.23010395">Dataset ↗</a> · <a href="https://github.com/MUzairZahid/BRSR-OpGAN">Source ↗</a></span>
+</footer>
+</div>
+
 <script>
-(function () {
-  "use strict";
-  var SIG = __DATA__;
-  var ORDER = Object.keys(SIG);
-  var T_END = 17.5;
-  var TX = [126, 104], RX = [980, 104], REF = [454, 198], INT = [760, 190], BOX = [1056, 104], OUT0 = [1186, 176], OUT1 = [1186, 224];
-  var NS = "http://www.w3.org/2000/svg";
-  var params = new URLSearchParams(location.search);
-  var state = { t: 0, wf: ORDER[0], paused: false, speed: Math.min(4, Math.max(0.25, parseFloat(params.get("speed")) || 1)) };
-  if (params.get("record")) document.body.classList.add("record");
-  if (SIG[params.get("wf")]) state.wf = params.get("wf");
+'use strict';
+const RAW = __SIGNAL_DATA__;
+/* ---- pure data + math (kept contiguous: tests/test_restoration_page.py executes this block in Node) ---- */
+function decodeComponent(p){
+  const bin=atob(p.b64),n=bin.length>>1,s=p.scale/32767,I=new Array(1024),Q=new Array(1024);
+  for(let i=0;i<n;i++){const v=((bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8))<<16)>>16;if(i<1024)I[i]=v*s;else Q[i-1024]=v*s;}
+  return [I,Q];
+}
+const TRACES=['clean','echo','cci','noise','restored1','restored2'];
+function decodeAll(raw){
+  const out={fs:raw.fs,records:{}};
+  for(const name in raw.records)out.records[name]=raw.records[name].map(r=>{const d=Object.assign({},r);for(const k of TRACES)d[k]=decodeComponent(r[k]);return d;});
+  return out;
+}
+const names=['Echo','Cci','Noise'], keys=['echo','cci','noise'], weightIndex=[1,2,0];
+function mix(){let d=record();return d.clean.map((ch,c)=>ch.map((v,n)=>v+keys.reduce((sum,key,k)=>sum+(state.enabled[k]?d[key][c][n]:0),0)));}
+function measured(z){let d=record(),p=0,e=0;for(let c=0;c<2;c++)for(let i=0;i<1024;i++){p+=d.clean[c][i]**2;e+=(z[c][i]-d.clean[c][i])**2;}return {snr:e===0?Infinity:10*Math.log10(p/e),ratio:e/p};}
+function restored(){return record()['restored'+state.pass];}
+function fft(real,imag){const n=real.length;for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){[real[i],real[j]]=[real[j],real[i]];[imag[i],imag[j]]=[imag[j],imag[i]];}}for(let size=2;size<=n;size*=2){let ang=-2*Math.PI/size;for(let base=0;base<n;base+=size){for(let k=0;k<size/2;k++){let c=Math.cos(ang*k),s=Math.sin(ang*k),a=base+k,b=a+size/2,tr=real[b]*c-imag[b]*s,ti=real[b]*s+imag[b]*c;real[b]=real[a]-tr;imag[b]=imag[a]-ti;real[a]+=tr;imag[a]+=ti;}}}}
+const STFT={win:64,hop:4};
+function spectrum(z){const out=[],W=STFT.win;for(let s=0;s<=z[0].length-W;s+=STFT.hop){const re=new Array(W),im=new Array(W);for(let k=0;k<W;k++){const w=.5-.5*Math.cos(2*Math.PI*k/(W-1));re[k]=z[0][s+k]*w;im[k]=z[1][s+k]*w;}fft(re,im);out.push(re.map((r,i)=>10*Math.log10(r*r+im[i]*im[i]+1e-14)));}return out;}
+/* ---- end pure math ---- */
 
-  var $ = function (id) { return document.getElementById(id); };
-  var clamp = function (x) { return Math.max(0, Math.min(1, x)); };
-  var R = function (a, b) { var x = clamp((state.t - a) / (b - a)); return x * x * (3 - 2 * x); };
-  var pt = function (q) { return q[0].toFixed(1) + "," + q[1].toFixed(1); };
-  var fmt = function (v) { return v.toFixed(1).replace("-", "−"); };
+const DATA=decodeAll(RAW);
+const CLASSES=Object.keys(DATA.records);
+const $=id=>document.getElementById(id), $$=s=>Array.from(document.querySelectorAll(s));
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const STAGES=5, STAGE_START=[0,2,4,6,8], T_END=12;
+const stageAt=t=>{let s=0;for(let i=0;i<STAGES;i++)if(t>=STAGE_START[i])s=i;return s;};
+const state={wf:'LFM',sample:0,inspect:'All',channel:0,range:[0,160],preset:160,stage:0,enabled:[false,false,false],pass:2,playing:false,t:0,loop:!reduced.matches,waiting:!reduced.matches,cursor:null,hover:null,swipe:.5};
+let current, cleanPeak, cleanSpec, restSpec, plotLimit, last=performance.now(), elapsed=0, sceneVisible=true;
+const record=()=>DATA.records[state.wf][state.sample];
+const fmt=(n,d=1)=>n.toFixed(d).replace('-','−');
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COLOR={Clean:'--clean',Echo:'--echo',Cci:'--cci',Noise:'--awgn',Restored:'--clean',Model:'--clean'};
+const DASH=__COMPONENT_DASHES__;
+const LABEL={Clean:'Clean',Echo:'Echo',Cci:'Interference',Noise:'AWGN',Restored:'Restored',Model:'Restorer'};
+const showRestored=()=>state.stage>=4;
 
-  // ---- static pieces made once
-  var i, el;
-  for (var x = 8; x < 1358; x += 22) {
-    el = document.createElementNS(NS, "line");
-    el.setAttribute("x1", x); el.setAttribute("y1", 280); el.setAttribute("x2", x - 8); el.setAttribute("y2", 292);
-    $("ticks").appendChild(el);
-  }
-  var ringPool = [];
-  for (i = 0; i < 24; i++) { el = document.createElementNS(NS, "circle"); el.setAttribute("opacity", 0); $("rings").appendChild(el); ringPool.push(el); }
+/* ---- theme ---- */
+function applyTheme(t){if(t)document.documentElement.setAttribute('data-theme',t);else document.documentElement.removeAttribute('data-theme');const dark=isDark();$('themeToggle').setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme');$('themeIcon').setAttribute('d',dark?'M13 3.5A6.5 6.5 0 1 0 16.5 12 5.5 5.5 0 0 1 13 3.5Z':'M10 3v2M10 15v2M3 10h2M15 10h2M5 5l1.4 1.4M13.6 13.6L15 15M5 15l1.4-1.4M13.6 6.4L15 5M10 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z');}
+function isDark(){const t=document.documentElement.getAttribute('data-theme');return t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;}
+try{applyTheme(localStorage.getItem('brsr-theme')||null);}catch(e){applyTheme(null);}
+$('themeToggle').addEventListener('click',()=>{const next=isDark()?'light':'dark';try{localStorage.setItem('brsr-theme',next);}catch(e){}applyTheme(next);drawAll();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{applyTheme(document.documentElement.getAttribute('data-theme'));drawAll();});
 
-  // U-Net style layer bars inside the model box
-  var BAR_H = [52, 42, 32, 22, 14, 22, 32, 42, 52], bars = [];
-  BAR_H.forEach(function (h, k) {
-    var b = document.createElementNS(NS, "rect");
-    b.setAttribute("x", 1083 + k * 24); b.setAttribute("y", 130 - h / 2); b.setAttribute("width", 14); b.setAttribute("height", h);
-    b.setAttribute("rx", 3); b.setAttribute("fill", "#efece2"); b.setAttribute("stroke", "#8f8b7e"); b.setAttribute("stroke-width", 1);
-    $("bars").appendChild(b); bars.push(b);
-  });
+/* ---- canvas helpers ---- */
+function canvasSetup(canvas){const box=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio||1,w=Math.max(1,Math.round(box.width*ratio)),h=Math.max(1,Math.round(box.height*ratio));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);return [ctx,box.width,box.height];}
+function niceStep(range,target){const raw=range/target,p=10**Math.floor(Math.log10(raw)),c=raw/p;return (c<1.5?1:c<3?2:c<7?5:10)*p;}
+const M={l:46,r:10,t:10,b:24};
 
-  var seed = 12345;
-  var rnd = function () { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
-  var gauss = function () { return Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd()); };
-  var dots = [];
-  for (i = 0; i < 120; i++) {
-    var dx, dy;
-    if (i < 75) { dx = 980 + gauss() * 65; dy = 125 + gauss() * 55; } else { dx = 40 + rnd() * 1000; dy = 20 + rnd() * 250; }
-    el = document.createElementNS(NS, "circle");
-    el.setAttribute("r", (1.3 + rnd() * 1.5).toFixed(2));
-    el.setAttribute("opacity", 0);
-    $("dots").appendChild(el);
-    dots.push({ el: el, x: Math.max(4, Math.min(1040, dx)), y: Math.max(4, Math.min(276, dy)), ph: rnd() * 6.283, k: 3 + rnd() * 5 });
-  }
-
-  function walk(pts, p) {
-    var segs = [], total = 0, k;
-    for (k = 1; k < pts.length; k++) { var L = Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]); segs.push(L); total += L; }
-    var d = clamp(p) * total, trail = [pts[0]];
-    for (k = 0; k < segs.length; k++) {
-      var a = pts[k], b = pts[k + 1], ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
-      if (d <= segs[k] || k === segs.length - 1) {
-        var f = segs[k] ? Math.min(1, d / segs[k]) : 0, q = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
-        trail.push(q);
-        return { q: q, ang: ang, trail: trail.map(pt).join(" ") };
-      }
-      d -= segs[k];
-      trail.push(b);
+/* ---- time plots ---- */
+function setPlotLimit(){
+  const d=record(),r=restored(),[a,b]=state.range,ch=state.channel;let m=0;
+  for(let i=a;i<b;i++){let v=d.clean[ch][i];m=Math.max(m,Math.abs(v),Math.abs(r[ch][i]));let s=v;for(let k=0;k<3;k++)if(state.enabled[k]){const c=d[keys[k]][ch][i];s+=c;m=Math.max(m,Math.abs(c));}m=Math.max(m,Math.abs(s));}
+  const step=niceStep(m*1.15,3);plotLimit=Math.max(step,Math.ceil(m*1.15/step)*step);
+}
+function drawTime(){
+  if(!current)return;
+  const d=record(),r=restored(),amp=plotLimit,ch=state.channel,[n0,n1]=state.range,count=n1-n0;
+  const ink=css('--ink'),grid=css('--grid'),muted=css('--muted'),axis=css('--line2');
+  function plot(id,series,label){
+    const [ctx,w,h]=canvasSetup($(id)),pw=w-M.l-M.r,ph=h-M.t-M.b,x=n=>M.l+pw*(n-n0)/Math.max(1,count-1),y=v=>M.t+ph/2-v/amp*ph/2;
+    ctx.clearRect(0,0,w,h);
+    ctx.font='11px '+css('--font-mono');ctx.fillStyle=muted;ctx.strokeStyle=grid;ctx.lineWidth=1;ctx.textAlign='right';ctx.textBaseline='middle';
+    const ystep=niceStep(2*amp,4),ydec=Math.max(0,-Math.floor(Math.log10(ystep)+1e-9));
+    for(let v=Math.ceil(-amp/ystep-1e-9)*ystep;v<=amp+1e-9;v+=ystep){const val=Math.abs(v)<1e-9?0:v,yy=Math.round(y(val))+.5;ctx.beginPath();ctx.moveTo(M.l,yy);ctx.lineTo(w-M.r,yy);ctx.stroke();ctx.fillText(fmt(val,ydec),M.l-8,yy);}
+    const t0=n0/100,t1=(n1-1)/100,tstep=niceStep(t1-t0,5),tdec=Math.max(0,-Math.floor(Math.log10(tstep)+1e-9)),tfirst=Math.ceil(t0/tstep-1e-9)*tstep;ctx.textAlign='center';ctx.textBaseline='top';
+    for(let t=tfirst;t<=t1+1e-9;t+=tstep){const xx=Math.round(x(t*100))+.5;ctx.beginPath();ctx.moveTo(xx,M.t);ctx.lineTo(xx,M.t+ph);ctx.stroke();ctx.fillText(fmt(t,tdec)+(t===tfirst?' µs':''),xx,M.t+ph+7);}
+    ctx.strokeStyle=axis;ctx.beginPath();ctx.moveTo(M.l+.5,M.t);ctx.lineTo(M.l+.5,M.t+ph);ctx.lineTo(w-M.r,M.t+ph);ctx.stroke();
+    ctx.save();ctx.beginPath();ctx.rect(M.l,M.t,pw,ph);ctx.clip();
+    function trace(arr,col,dash,width,alpha){
+      ctx.globalAlpha=alpha;ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=width;ctx.setLineDash(dash);
+      const perPx=count/pw;
+      if(perPx>1.6&&!dash.length){
+        const cols=Math.ceil(pw),mins=new Array(cols).fill(Infinity),maxs=new Array(cols).fill(-Infinity);
+        for(let i=n0;i<n1;i++){const c=Math.min(cols-1,Math.floor((i-n0)/count*cols));const v=arr[i];if(v<mins[c])mins[c]=v;if(v>maxs[c])maxs[c]=v;}
+        ctx.beginPath();for(let c=0;c<cols;c++)if(maxs[c]>-Infinity)ctx.lineTo(M.l+c+.5,y(maxs[c]));for(let c=cols-1;c>=0;c--)if(mins[c]<Infinity)ctx.lineTo(M.l+c+.5,y(mins[c]));ctx.closePath();ctx.globalAlpha=alpha*.55;ctx.fill();
+        ctx.globalAlpha=alpha;ctx.lineWidth=1;ctx.beginPath();for(let c=0;c<cols;c++)if(maxs[c]>-Infinity)ctx.lineTo(M.l+c+.5,y(maxs[c]));ctx.stroke();ctx.beginPath();for(let c=0;c<cols;c++)if(mins[c]<Infinity)ctx.lineTo(M.l+c+.5,y(mins[c]));ctx.stroke();
+      }else{ctx.beginPath();for(let i=n0;i<n1;i++){const xx=x(i),yy=y(arr[i]);i===n0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy);}ctx.stroke();}
+      ctx.setLineDash([]);ctx.globalAlpha=1;
     }
+    for(const s of series)trace(s.arr,s.col,s.dash||[],s.width||1.5,s.alpha===undefined?1:s.alpha);
+    const cur=state.hover!==null?state.hover:state.cursor;
+    if(cur!==null&&cur>=n0&&cur<n1){const xx=Math.round(x(cur))+.5;ctx.strokeStyle=ink;ctx.globalAlpha=.55;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xx,M.t);ctx.lineTo(xx,M.t+ph);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;for(const s of series.slice(0,2)){ctx.fillStyle=s.col;ctx.beginPath();ctx.arc(x(cur),y(s.arr[cur]),3.5,0,7);ctx.fill();ctx.strokeStyle=css('--surface');ctx.lineWidth=2;ctx.stroke();}}
+    if(state.brush){const [b0,b1]=state.brush;ctx.fillStyle=ink;ctx.globalAlpha=.08;ctx.fillRect(Math.min(b0,b1),M.t,Math.abs(b1-b0),ph);ctx.globalAlpha=1;}
+    ctx.restore();
+    $(id).setAttribute('aria-label',label+' '+state.wf+' '+(ch?'Q':'I')+' waveform, samples '+n0+' to '+(n1-1)+'. Shared amplitude limits ±'+fmt(amp,2)+' clean-RMS units. Use arrow keys to move the cursor.');
   }
+  const cleanCol=css('--clean'),rxCol=css('--received'),resCol=css('--residual');
+  plot('cleanTimePlot',[{arr:d.clean[ch],col:cleanCol}],'Clean');
+  const rxSeries=[{arr:current[ch],col:rxCol}];
+  if(state.inspect!=='All'&&state.inspect!=='Restored'&&state.inspect!=='Model'){const k=names.indexOf(state.inspect),comp=k<0?d.clean[ch]:d[keys[k]][ch].map(v=>v*(state.enabled[k]?1:0));rxSeries.push({arr:comp,col:css(COLOR[state.inspect]),dash:DASH[state.inspect],width:1.6,alpha:.95});}
+  plot('timePlot',rxSeries,'Received');
+  plot('restTimePlot',[{arr:r[ch],col:cleanCol,width:1.6},{arr:d.clean[ch],col:cleanCol,dash:[6,3],width:1.2,alpha:.75}],'Restored');
+  plot('resTimePlot',[{arr:current[ch].map((v,i)=>v-d.clean[ch][i]),col:rxCol,width:1.1,alpha:.55},{arr:r[ch].map((v,i)=>v-d.clean[ch][i]),col:resCol,width:1.6}],'Residual');
+  $$('.channelLabel').forEach(e=>e.textContent=(ch?'Q':'I')+' channel');
+  $$('.windowLabel').forEach(e=>e.textContent=count===1024?'All 1,024 samples · 0–10.23 µs':'Samples '+n0+'–'+(n1-1)+' · '+fmt(n0/100,2)+'–'+fmt((n1-1)/100,2)+' µs');
+}
 
-  function shape(arr, n, half, amp) {
-    var seg = arr.slice(0, n), m = Math.max.apply(null, seg.map(Math.abs)) || 1;
-    return seg.map(function (v, j) { return (-half + 2 * half * j / (n - 1)).toFixed(1) + "," + (-amp * v / m).toFixed(1); }).join(" ");
-  }
-
-  var l1 = Math.hypot(REF[0] - TX[0], REF[1] - TX[1]), l2 = Math.hypot(RX[0] - REF[0], RX[1] - REF[1]);
-  var EVENTS = [
-    { at: 0.9, c: TX, color: "#2a78d6", big: true }, { at: 3.2, c: TX, color: "#8a5cc9", big: true },
-    { at: 3.2 + 2.4 * l1 / (l1 + l2), c: REF, color: "#8a5cc9", big: true }, { at: 6.3, c: INT, color: "#eb6834", big: true },
-    { at: 2.6, c: RX, color: "#2a78d6" }, { at: 5.6, c: RX, color: "#8a5cc9" }, { at: 7.6, c: RX, color: "#eb6834" }
-  ];
-  var STARTS = [0.4, 3.0, 6.0, 8.2, 9.9, 11.2];
-  var STEP_COLORS = ["#2a78d6", "#6a3fae", "#c9531f", "#6f6e68", "#52514e", "#127a55"];
-  var stepBtns = Array.prototype.slice.call(document.querySelectorAll(".steps button"));
-  var wfBtns = Array.prototype.slice.call(document.querySelectorAll(".seg button"));
-  var imgs = Array.prototype.slice.call(document.querySelectorAll(".specbox img"));
-
-  function setWaveform(wf) {
-    state.wf = wf;
-    var D = SIG[wf], w = D.w;
-    wfBtns.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.wf === wf ? "true" : "false"); });
-    $("pktD").setAttribute("points", shape(D.clean, 44, 56, 12));
-    $("pktE").setAttribute("points", shape(D.clean, 44, 56, 12));
-    $("pktC").setAttribute("points", shape(D.cci, 44, 56, 12));
-    $("pktM").setAttribute("points", shape(D.noisy, 40, 34, 11));
-    $("pktR").setAttribute("points", shape(D.restored, 36, 22, 10));
-    $("txParams").textContent = D.name + " · test row " + D.row;
-    $("echoDetail").textContent = "τ = " + D.delay + " samples · weight " + w[1].toFixed(2);
-    $("cciDetail").textContent = "signal #" + D.cci_id + " · weight " + w[2].toFixed(2);
-    $("noiseDetail").textContent = "AWGN at the receiver · weight " + w[0].toFixed(2);
-    $("rxDetail").textContent = "SNR " + fmt(D.snr_in) + " dB";
-    $("outDetail").textContent = "SNR " + fmt(D.snr_in) + " → " + fmt(D.snr_out) + " dB";
-    $("wE").textContent = "w " + w[1].toFixed(2);
-    $("wC").textContent = "w " + w[2].toFixed(2);
-    $("wN").textContent = "w " + w[0].toFixed(2);
-    $("wR").textContent = fmt(D.snr_out) + " dB";
-    lastCaption = "";
-    render();
-  }
-
-  function captionFor(stage, D) {
-    return [
-      "The emitter sends a clean " + D.name + " pulse. The copy that arrives on the direct path is the clean target stored in the BRSR test set.",
-      "Multipath: the same pulse reflects off a building and reaches the receiver " + D.delay + " samples (" + (D.delay / 100).toFixed(2) + " µs) later.",
-      "A second emitter on the same band adds co-channel interference, one of the benchmark's fixed interference signals (#" + D.cci_id + ").",
-      "The receiver adds AWGN. The three weights are random and sum to 1, and their total power sets the input SNR.",
-      "Received at " + fmt(D.snr_in) + " dB SNR. BRSR-OpGAN gets only this signal, with no hint of which artifacts it contains.",
-      "Two passes of the Self-ONN generator restore the signal from " + fmt(D.snr_in) + " dB to " + fmt(D.snr_out) + " dB SNR. Dashed blue is the clean target."
-    ][stage];
-  }
-
-  function packet(id, pts, a, b) {
-    var p = (state.t - a) / (b - a), w = walk(pts, p), on = p > 0 && p < 1.08;
-    var op = on ? Math.min(clamp(p / 0.08), clamp((1.08 - p) / 0.12)) : 0;
-    el = $(id);
-    el.setAttribute("transform", "translate(" + pt(w.q) + ") rotate(" + w.ang.toFixed(1) + ")");
-    el.setAttribute("opacity", op.toFixed(3));
-    return { trail: w.trail, started: p > 0 };
-  }
-
-  var lastStage = -1, lastCaption = "";
-  function render() {
-    var t = state.t, D = SIG[state.wf];
-    var cS = R(2.4, 2.8), cE = R(5.4, 5.9), cC = R(7.4, 7.9), cN = R(8.4, 9.6), cR = R(12.4, 13.4);
-
-    var pD = packet("pktD", [TX, RX], 0.9, 2.6), pE = packet("pktE", [TX, REF, RX], 3.2, 5.6), pC = packet("pktC", [INT, RX], 6.3, 7.6);
-    var pM = packet("pktM", [RX, BOX], 10.3, 11.2), pR = packet("pktR", [OUT0, OUT1], 12.6, 13.3);
-    [["trailD", pD, cS], ["trailE", pE, cE], ["trailC", pC, cC], ["trailM", pM, R(11.1, 11.4)], ["trailR", pR, R(13.2, 13.5)]].forEach(function (r) {
-      var e = $(r[0]);
-      e.setAttribute("points", r[1].trail);
-      e.setAttribute("opacity", r[1].started ? (0.25 + 0.35 * (1 - r[2])).toFixed(3) : 0);
-    });
-
-    var n = 0;
-    EVENTS.forEach(function (e) {
-      for (var k = 0; k < (e.big ? 3 : 1); k++) {
-        var age = t - e.at - k * 0.22, life = e.big ? 1.3 : 0.7;
-        if (age > 0 && age < life && n < ringPool.length) {
-          var c = ringPool[n++];
-          c.setAttribute("cx", e.c[0]); c.setAttribute("cy", e.c[1]);
-          c.setAttribute("r", ((e.big ? 10 : 6) + age / life * (e.big ? 150 : 40)).toFixed(1));
-          c.setAttribute("stroke", e.color);
-          c.setAttribute("opacity", ((e.big ? 0.45 : 0.6) * (1 - age / life)).toFixed(3));
-        }
-      }
-    });
-    for (; n < ringPool.length; n++) ringPool[n].setAttribute("opacity", 0);
-
-    dots.forEach(function (d) {
-      if (cN < 0.001) { d.el.setAttribute("opacity", 0); return; }
-      d.el.setAttribute("cx", (d.x + Math.sin(t * d.k + d.ph) * 3).toFixed(1));
-      d.el.setAttribute("cy", (d.y + Math.cos(t * d.k * 0.8 + d.ph) * 3).toFixed(1));
-      d.el.setAttribute("opacity", (cN * (0.2 + 0.55 * Math.abs(Math.sin(t * d.k + d.ph)))).toFixed(3));
-    });
-
-    // model: two sweeps over the layers (two passes), then it stays lit
-    var p = (t - 11.2) / 1.4, running = p > 0 && p < 1, done = p >= 1;
-    var sweep = running ? (p < 0.5 ? p / 0.5 : (p - 0.5) / 0.5) * BAR_H.length : -9;
-    bars.forEach(function (b, k) {
-      var lit = done ? 0.55 : Math.max(0, 1 - Math.abs(sweep - k - 0.5) / 1.6);
-      b.setAttribute("fill", lit > 0.02 ? "rgba(27,175,122," + (0.15 + 0.7 * lit).toFixed(3) + ")" : "#efece2");
-      b.setAttribute("stroke", lit > 0.02 ? "#127a55" : "#8f8b7e");
-    });
-    $("passLbl").textContent = running ? (p < 0.5 ? "pass 1 of 2" : "pass 2 of 2") : "2 passes";
-    $("passLbl").setAttribute("opacity", (running ? 1 : done ? 0.8 : 0).toFixed(2));
-    $("boxGlow").setAttribute("opacity", (running ? 0.10 + 0.06 * Math.sin(t * 10) : 0).toFixed(3));
-
-    $("rxGlow").setAttribute("r", (12 + 3 * Math.sin(t * 6)).toFixed(1));
-    $("rxGlow").setAttribute("opacity", (0.12 * R(9.8, 10.3) * (1 - R(11.2, 11.6))).toFixed(3));
-    [["lblTx", 0.2, 0.7], ["lblDirect", 0.9, 1.3], ["lblEcho", 3.2, 3.6], ["lblCci", 6.3, 6.7], ["lblNoise", 8.3, 8.7], ["lblRx", 9.8, 10.3], ["lblOut", 13.0, 13.5]]
-      .forEach(function (g) { $(g[0]).setAttribute("opacity", R(g[1], g[2]).toFixed(3)); });
-
-    var len = D.clean.length, sx = 740 / (len - 1), sy = 78 / D.ymax, rx = [], cl = [];
-    for (var j = 0; j < len; j++) {
-      var recv = cS * D.clean[j] + cE * D.echo[j] + cC * D.cci[j] + cN * D.noise[j];
-      var v = (1 - cR) * recv + cR * D.restored[j];
-      rx.push((j * sx).toFixed(1) + "," + (85 - sy * v).toFixed(1));
-      cl.push((j * sx).toFixed(1) + "," + (85 - sy * D.clean[j]).toFixed(1));
+/* ---- spectrograms ---- */
+function hex(h){h=h.replace('#','');return [0,2,4].map(i=>parseInt(h.substr(i,2),16));}
+function rampColor(q){const stops=[];for(let i=0;i<8;i++)stops.push(css('--ramp-'+i));const p=Math.max(0,Math.min(1,q))*7,a=Math.min(6,Math.floor(p)),f=p-a,c1=hex(stops[a]),c2=hex(stops[a+1]);return c1.map((v,i)=>Math.round(v*(1-f)+c2[i]*f));}
+let rampLUT=null,rampTheme='';
+function lut(){const key=isDark()?'d':'l';if(rampLUT&&rampTheme===key)return rampLUT;rampLUT=[];for(let i=0;i<=256;i++)rampLUT.push(rampColor(i/256));rampTheme=key;return rampLUT;}
+const specGeom={};let currentSpec=null;
+function paintOffscreen(S,L){const W=STFT.win,frames=S.length,off=document.createElement('canvas');off.width=frames;off.height=W;const octx=off.getContext('2d'),im=octx.createImageData(frames,W);for(let x=0;x<frames;x++)for(let y=0;y<W;y++){const bin=(W-1-y+W/2)%W,q=(S[x][bin]-cleanPeak+40)/40,c=L[Math.max(0,Math.min(256,Math.round(q*256)))],pos=(y*frames+x)*4;im.data[pos]=c[0];im.data[pos+1]=c[1];im.data[pos+2]=c[2];im.data[pos+3]=255;}octx.putImageData(im,0,0);return off;}
+function specAxes(ctx,w,h,x){
+  const pw=w-M.l-M.r,ph=h-M.t-M.b,W=STFT.win,muted=css('--muted'),axis=css('--line2');
+  ctx.font='11px '+css('--font-mono');ctx.fillStyle=muted;ctx.strokeStyle=axis;ctx.lineWidth=1;
+  ctx.textAlign='right';ctx.textBaseline='middle';const fs=DATA.fs/1e6,df=fs/W,ftop=(W/2-1)*df,y=f=>M.t+ph*(ftop+df/2-f)/fs;
+  for(const f of [-40,-20,0,20,40]){const yy=Math.round(y(f))+.5;ctx.beginPath();ctx.moveTo(M.l-4,yy);ctx.lineTo(M.l,yy);ctx.stroke();ctx.fillText((f>0?'+':'')+f,M.l-8,yy);}
+  ctx.save();ctx.translate(12,M.t+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.fillText('MHz',0,0);ctx.restore();
+  ctx.textAlign='center';ctx.textBaseline='top';for(const t of [0,2,4,6,8,10]){const xx=Math.round(x(t*100))+.5;ctx.beginPath();ctx.moveTo(xx,M.t+ph);ctx.lineTo(xx,M.t+ph+4);ctx.stroke();ctx.fillText(t+(t===0?' µs':''),xx,M.t+ph+7);}
+  ctx.beginPath();ctx.moveTo(M.l+.5,M.t);ctx.lineTo(M.l+.5,M.t+ph);ctx.lineTo(w-M.r,M.t+ph);ctx.stroke();
+  const [n0,n1]=state.range;if(n1-n0<1024){ctx.strokeStyle=css('--ink');ctx.globalAlpha=.7;ctx.setLineDash([3,2]);ctx.strokeRect(Math.round(x(n0))+.5,M.t+.5,Math.max(2,x(n1)-x(n0)),ph-1);ctx.setLineDash([]);ctx.globalAlpha=1;}
+}
+function drawSpec(){
+  const L=lut(),W=STFT.win;
+  function paint(id,S,split){
+    const [ctx,w,h]=canvasSetup($(id)),pw=w-M.l-M.r,ph=h-M.t-M.b;ctx.clearRect(0,0,w,h);
+    ctx.fillStyle=css('--surface2');ctx.fillRect(M.l,M.t,pw,ph);
+    const frames=S[0].length,x=n=>M.l+pw*n/1024,tc0=(W-1)/2,tc1=(frames-1)*STFT.hop+(W-1)/2,x0=x(tc0-STFT.hop/2),x1=x(tc1+STFT.hop/2);
+    ctx.imageSmoothingEnabled=false;
+    if(!split){ctx.drawImage(paintOffscreen(S[0],L),x0,M.t,x1-x0,ph);}
+    else{
+      const xs=M.l+pw*state.swipe,a=paintOffscreen(S[0],L),b=paintOffscreen(S[1],L);
+      ctx.save();ctx.beginPath();ctx.rect(M.l,M.t,xs-M.l,ph);ctx.clip();ctx.drawImage(a,x0,M.t,x1-x0,ph);ctx.restore();
+      ctx.save();ctx.beginPath();ctx.rect(xs,M.t,w-M.r-xs,ph);ctx.clip();ctx.drawImage(b,x0,M.t,x1-x0,ph);ctx.restore();
+      ctx.strokeStyle=css('--ink');ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xs,M.t);ctx.lineTo(xs,M.t+ph);ctx.stroke();
+      ctx.font='600 11px '+css('--font-mono');ctx.fillStyle=css('--ink');ctx.textBaseline='top';ctx.textAlign='right';ctx.fillText('RECEIVED',xs-6,M.t+6);ctx.textAlign='left';ctx.fillText('RESTORED',xs+6,M.t+6);
     }
-    $("plotRx").setAttribute("points", rx.join(" "));
-    $("plotRest").setAttribute("points", rx.join(" "));
-    $("plotRx").setAttribute("opacity", (1 - cR).toFixed(3));
-    $("plotRest").setAttribute("opacity", cR.toFixed(3));
-    $("plotClean").setAttribute("points", cl.join(" "));
-    $("plotClean").setAttribute("opacity", (0.9 * cS).toFixed(3));
-    $("barE").style.width = Math.round(cE * 100) + "%";
-    $("barC").style.width = Math.round(cC * 100) + "%";
-    $("barN").style.width = Math.round(cN * 100) + "%";
-    $("barR").style.width = Math.round(cR * 100) + "%";
+    specAxes(ctx,w,h,x);
+    const cur=state.specHover;if(cur&&cur.id===id){ctx.strokeStyle=css('--ink');ctx.globalAlpha=.6;ctx.strokeRect(cur.x-.5,cur.y-.5,cur.cw+1,cur.ch+1);ctx.globalAlpha=1;}
+    specGeom[id]={x,frames};
+  }
+  cleanSpec=cleanSpec||spectrum(record().clean);currentSpec=spectrum(current);restSpec=spectrum(restored());
+  paint('cleanSpectrum',[cleanSpec]);paint('spectrum',[currentSpec]);paint('restSpectrum',[restSpec]);paint('swipeSpectrum',[currentSpec,restSpec],true);
+  $$('.cbar').forEach(c=>{const ctx=c.getContext('2d');for(let i=0;i<96;i++){const col=L[Math.round(i/95*256)];ctx.fillStyle='rgb('+col.join(',')+')';ctx.fillRect(i,0,1,8);}});
+  $('spectrum').setAttribute('aria-label','Received '+state.wf+' spectrogram: '+$('specStage').textContent+'. Colour scale −40 to 0 dB relative to the clean peak; 64-point Hann window, 4-sample hop.');
+  $('cleanSpectrum').setAttribute('aria-label','Clean '+state.wf+' spectrogram, same scale.');
+  $('restSpectrum').setAttribute('aria-label','Restored '+state.wf+' spectrogram after pass '+state.pass+', same scale.');
+}
 
-    var level = [1, cE, cC, cN, cR];
-    imgs.forEach(function (im) { im.style.opacity = im.dataset.wf === state.wf ? level[+im.dataset.k].toFixed(3) : 0; });
-    $("specLayer").style.opacity = cS.toFixed(3);
-    $("specStage").textContent = cS < 0.5 ? "no signal yet" : cR > 0.5 ? "restored by BRSR-OpGAN-D-2P" : cN > 0.5 ? "received (all three artifacts)"
-      : cC > 0.5 ? "clean + echo + interference" : cE > 0.5 ? "clean + echo" : "clean pulse";
+/* ---- scene ---- */
+function updateDiagram(){
+  const rest=showRestored();
+  const parts=[['Clean',true],['Echo',state.enabled[0]],['Cci',state.enabled[1]],['Noise',state.enabled[2]],['Model',rest],['Restored',rest]];
+  parts.forEach(([name,active])=>{const hi=state.inspect==='All'||state.inspect===name||(state.inspect==='Restored'&&name==='Model')||(state.inspect==='Model'&&name==='Restored');
+    $$('[data-node="'+name+'"]').forEach(n=>{n.classList.toggle('off',!active);n.setAttribute('aria-pressed',String(state.inspect===name));if(name==='Model')n.classList.toggle('lit',rest);});
+    $$('[data-wire="'+name+'"]').forEach(w=>{w.style.opacity=active?(hi?'1':'.15'):'0';});
+    $$('[data-particle="'+name+'"]').forEach(p=>p.style.opacity=active&&hi&&state.playing?'1':'0');});
+  const chainHi=state.inspect==='All'||state.inspect==='Restored'||state.inspect==='Model';
+  $$('[data-wire="Rx"],[data-wire="Rest"]').forEach(w=>{w.style.opacity=rest?(chainHi?'1':'.15'):'0';});
+  $$('[data-particle="Rx"],[data-particle="Rest"]').forEach(p=>p.style.opacity=rest&&chainHi&&state.playing?'1':'0');
+  $$('button[data-inspect]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.inspect===state.inspect)));
+  const d=record(),texts={All:'Select a source, the restorer or the output — in the scene or with the buttons — to trace it in the plots below.',Clean:'Clean target x[n]: the reference the model is scored against. Highlighting it overlays the same trace on the received plot.',Echo:'Echo: the benchmark’s delayed copy of the source waveform (delay τ = '+d.delay+' samples, '+(d.delay/100).toFixed(2)+' µs), represented by the reflector.',Cci:'Co-channel interference: fixed interference signal #'+d.cciId+' of the benchmark, at its stored power fraction.',Noise:'Receiver noise: the stored complex Gaussian realisation at its power fraction.',Restored:'Restored output ŷ[n]: the released generator applied twice to the received signal. Compare it with the clean target in the third card below.',Model:'BRSR-OpGAN-D: a 1D Self-ONN U-Net generator (Q = 3). The released first-pass and second-pass weights are applied in sequence.'};
+  const k=names.indexOf(state.inspect),mutedOff=k>=0&&!state.enabled[k];
+  $('inspectCopy').textContent=texts[state.inspect]+(mutedOff?' This component is revealed at a later stage.':'')+((state.inspect==='Restored'||state.inspect==='Model')&&!rest?' The restorer runs at stage 05.':'');
+  $('selectionNote').textContent=state.inspect==='All'||state.inspect==='Restored'||state.inspect==='Model'?'Overlay a component to see its own trace on the received waveform. The restored card always shows the clean target as a dashed reference.':LABEL[state.inspect]+' is drawn as a '+({Clean:'solid',Echo:'dashed',Cci:'dash-dot',Noise:'dotted'}[state.inspect])+' overlay on the received waveform'+(mutedOff?' (zero until its stage)':'')+'.';
+  $('targetCard').style.boxShadow=state.inspect==='Clean'?'inset 0 0 0 1px var(--clean)':'';$('inputCard').style.boxShadow=k>=0||state.inspect==='Clean'?'inset 0 0 0 1px var(--line2)':'';$('restCard').style.boxShadow=state.inspect==='Restored'||state.inspect==='Model'?'inset 0 0 0 1px var(--clean)':'';
+  $('restCard').classList.toggle('pending',!rest);$('resCard').classList.toggle('pending',!rest);
+  const legend=[['received','var(--received)','Received y[n]']];if(k>=0||state.inspect==='Clean')legend.push([state.inspect==='Noise'?'awgn':state.inspect.toLowerCase(),'var('+COLOR[state.inspect]+')',LABEL[state.inspect]+' overlay']);
+  $('legend').innerHTML=legend.map(([cls,c,l])=>'<span><i class="'+cls+'" style="--c:'+c+'"></i>'+l+'</span>').join('');
+}
+const captions=[['Start with the target','The clean complex waveform stored in the test split. Every plot shows the same 10.24 µs observation.'],['Reveal the echo','Add the stored echo: a delayed copy of the source waveform at its power fraction.'],['Add another signal','A fixed interference signal is added at its stored power fraction. The full complex signals combine sample by sample.'],['Receive the mixture','Complex Gaussian noise completes the stored received signal: the only input the model gets, with no hint of which artifacts it contains.'],['Restore','The released generator runs twice on the received signal. The restored output and its residual error appear below.']];
 
-    var stage = t < 3.0 ? 0 : t < 6.0 ? 1 : t < 8.2 ? 2 : t < 9.8 ? 3 : t < 11.2 ? 4 : 5;
-    if (stage !== lastStage) {
-      stepBtns.forEach(function (b, k) {
-        b.classList.toggle("cur", k === stage);
-        b.classList.toggle("done", k < stage);
-        if (k === stage) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
-        b.querySelector(".n").style.background = k <= stage ? STEP_COLORS[k] : "#b3afa3";
+/* ---- state -> view ---- */
+function summary(){const m=measured(current),d=record(),rs=measured(restored()),on=names.map((n,k)=>LABEL[n]+' '+(state.enabled[k]?'on':'off')).join(', ');return state.wf+', test row '+d.row+', '+d.band+' band, sample '+(state.sample+1)+' of '+DATA.records[state.wf].length+'. Input SNR '+(Number.isFinite(m.snr)?fmt(m.snr,2)+' dB':'infinite (clean)')+'; restored after pass '+state.pass+' '+fmt(rs.snr,2)+' dB'+(showRestored()?'':' (shown at stage 05)')+'. '+on+'. Showing samples '+state.range[0]+' to '+(state.range[1]-1)+' of the '+(state.channel?'Q':'I')+' channel.';}
+let liveTimer,fadeTimer,runTimer;
+function announce(){clearTimeout(liveTimer);liveTimer=setTimeout(()=>{$('liveSummary').textContent=summary();},120);}
+function clearReadouts(){state.hover=null;state.cursor=null;state.specHover=null;$$('.tip').forEach(t=>t.classList.remove('on'));$('cursorReadout').textContent='';}
+function update(){
+  clearReadouts();current=mix();const d=record(),m=measured(current),rs=measured(restored()),rest=showRestored();
+  const inTxt=Number.isFinite(m.snr)?fmt(m.snr,2):'∞';
+  $('inputSnr').innerHTML=inTxt+'<small>dB · '+(state.enabled.every(Boolean)?'full mixture':state.enabled.some(Boolean)?'partial reveal':'clean')+'</small>';
+  $('restoredSnr').innerHTML=rest?fmt(rs.snr,2)+'<small>dB · pass '+state.pass+'</small>':'–<small>stage 05</small>';
+  $('improvement').innerHTML=rest&&state.enabled.every(Boolean)?(rs.snr-m.snr>=0?'+':'')+fmt(rs.snr-m.snr,2)+'<small>dB</small>':'–<small>'+(rest?'full mixture only':'stage 05')+'</small>';
+  $('delayStat').innerHTML=d.delay+'<small>samples · '+(d.delay/100).toFixed(2)+' µs</small>';
+  $('bigIn').textContent=fmt(d.snrInput,1);$('bigOut').textContent=fmt(state.pass===2?d.snrPass2:d.snrPass1,1);
+  $('passTag').textContent='after pass '+state.pass;$$('[data-pass]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.pass===state.pass)));
+  names.forEach((name,k)=>{const w=d.weights[weightIndex[k]];$('weight'+name).textContent=(100*w).toFixed(1)+'%';$('bar'+name).style.width=(100*w)+'%';$('bar'+name).style.opacity=state.enabled[k]?'1':'.25';});
+  $$('[data-stage]').forEach(b=>{if(+b.dataset.stage===state.stage)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+  $('stageTitle').textContent=captions[state.stage][0];$('stageCopy').textContent=captions[state.stage][1];$('modeLabel').textContent=state.playing?'GUIDED REVEAL':'PAUSED · EXPLORE';
+  const count=state.enabled.filter(Boolean).length;$('specStage').textContent=count===3?'stored received signal':count===0?'clean only':count+' artifact'+(count>1?'s':'')+' revealed';
+  $('railSummary').innerHTML='<span>row '+d.row+'</span><span>'+fmt(d.snrInput,1)+' → '+fmt(state.pass===2?d.snrPass2:d.snrPass1,1)+' dB</span>';
+  announce();updateDiagram();drawTime();drawSpec();syncPlay();if($('tableDetails').open)renderTable();
+}
+function drawAll(){rampLUT=null;drawTime();drawSpec();}
+function syncPlay(){document.body.classList.toggle('motion-running',state.playing&&sceneVisible&&!reduced.matches);$('loop').setAttribute('aria-pressed',String(state.loop));$('loop').textContent=state.loop?'Loop on':'Loop off';$('playbackNote').textContent=state.waiting?'Scroll to the scene to start, or press Play.':reduced.matches?'Reduced motion is on. Use the stages, or press Play for a timed reveal.':state.playing?(state.loop?'Playing · repeats automatically. Pause or choose a stage to explore.':'Playing once · stops at the restored output.'):'Paused · press Play or Replay to animate. All controls stay active.';$('playText').textContent=state.playing?'Pause':state.stage===STAGES-1?'Replay':'Play';$('playIcon').setAttribute('d',state.playing?'M4 2v10M10 2v10':'M3 1.5L12 7 3 12.5Z');$('playIcon').setAttribute('fill',state.playing?'none':'currentColor');}
+function setStage(stage){const wasRestored=state.stage>=4;state.stage=stage;state.enabled=[stage>=1,stage>=2,stage>=3];state.t=STAGE_START[stage];if(stage===4&&!wasRestored)runModel();setPlotLimit();update();progress();}
+function runModel(){if(reduced.matches)return;clearTimeout(runTimer);$$('.model').forEach(m=>{m.classList.remove('running');void m.getBoundingClientRect();m.classList.add('running');});runTimer=setTimeout(()=>$$('.model').forEach(m=>m.classList.remove('running')),2900);}
+function progress(){$('progress').style.width=(!state.playing?(state.stage+1)*(100/STAGES):Math.min(100,state.t/T_END*100))+'%';}
+function setWaveform(name,animate){
+  const changed=state.wf!==name;if(changed)state.sample=0;state.wf=name;const d=record();
+  $$('[data-wf]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.wf===name)));
+  $('waveTitle').textContent=d.title;$('rowTag').textContent='TEST ROW '+d.row;$('sampleCount').textContent='Sample '+(state.sample+1)+' / '+DATA.records[name].length+' · '+d.band+' band';
+  $$('[data-delay-label]').forEach(e=>e.textContent='Delay τ = '+d.delay+' samples');$$('[data-cci-label]').forEach(e=>e.textContent='Signal #'+d.cciId);
+  $('kvRow').textContent=d.row;$('kvTarget').textContent=fmt(d.snrTarget,2)+' dB';$('kvInput').textContent=fmt(d.snrInput,2)+' dB';$('kvDelay').textContent=d.delay+' · '+(d.delay/100).toFixed(2)+' µs';$('kvCci').textContent='#'+d.cciId;
+  $('waveDescription').textContent=d.title+' · released test row '+d.row+' ('+d.band+' band, all three artifacts).';
+  $('selectionRule').textContent='Row selection: '+RAW.selectionRule;
+  $('provenance').textContent='Test row '+d.row+' · label '+d.label+' · target SNR '+fmt(d.snrTarget,2)+' dB · input SNR '+fmt(d.snrInput,2)+' dB · pass 1 '+fmt(d.snrPass1,2)+' dB · pass 2 '+fmt(d.snrPass2,2)+' dB · SI-SDR (pass 2) '+fmt(d.sisdr,2)+' dB · delay τ '+d.delay+' · CCI #'+d.cciId+' · weights AWGN '+d.weights[0].toFixed(3)+', echo '+d.weights[1].toFixed(3)+', CCI '+d.weights[2].toFixed(3)+' · reference: input '+fmt(d.reference.input,2)+', pass 2 '+fmt(d.reference.pass2,2)+' dB';
+  cleanSpec=spectrum(d.clean);cleanPeak=Math.max(...cleanSpec.flat());
+  clearTimeout(fadeTimer);const grid=$('chartgrid');grid.classList.remove('fading');
+  setPlotLimit();update();
+  if(animate&&!reduced.matches){grid.classList.add('fading');fadeTimer=setTimeout(()=>grid.classList.remove('fading'),160);}
+}
+
+/* ---- table & CSV ---- */
+function rows(){const d=record(),r=restored(),out=[];for(let n=0;n<1024;n++){const row=[n,(n/100).toFixed(2),d.clean[0][n],d.clean[1][n]];for(const k of ['echo','cci','noise']){const on=state.enabled[keys.indexOf(k)];row.push(on?d[k][0][n]:0,on?d[k][1][n]:0);}row.push(current[0][n],current[1][n],r[0][n],r[1][n]);out.push(row);}return out;}
+function renderTable(){const [n0,n1]=state.range,body=$('sampleTable').tBodies[0],data=rows().slice(n0,n1);body.innerHTML=data.map(r=>'<tr>'+r.map((v,i)=>'<td>'+(i<2?v:fmt(v,4))+'</td>').join('')+'</tr>').join('');$('tableNote').textContent='Showing samples '+n0+'–'+(n1-1)+'. Components not yet revealed are zero; restored = after pass '+state.pass+'.';}
+$('tableDetails').addEventListener('toggle',()=>{if($('tableDetails').open)renderTable();});
+$('downloadCsv').addEventListener('click',()=>{const d=record(),m=measured(current),rs=measured(restored());const head=['# BRSR-OpGAN Restoration Observatory export','# dataset='+RAW.dataset+' model='+RAW.model+' pass='+state.pass,'# class='+state.wf+' test_row='+d.row+' target_snr_db='+d.snrTarget.toFixed(4)+' input_snr_db='+(Number.isFinite(m.snr)?m.snr.toFixed(4):'inf')+' restored_snr_db='+rs.snr.toFixed(4),'# echo_delay_samples='+d.delay+' cci_signal_id='+d.cciId+' weights_awgn_echo_cci='+d.weights.map(w=>w.toFixed(6)).join('/')+' revealed_echo_cci_awgn='+state.enabled.map(Number).join('/'),'# encoding: '+RAW.encoding+'; max quantisation error/trace peak='+RAW.maxQuantError.toExponential(6),'# units: clean-RMS (original clean RMS '+d.originalRms.toExponential(6)+'); fs=100 MHz; received = clean + revealed components; restored in the same units','n,t_us,clean_I,clean_Q,echo_I,echo_Q,cci_I,cci_Q,awgn_I,awgn_Q,received_I,received_Q,restored_I,restored_Q'];const csv=head.concat(rows().map(r=>r.map((v,i)=>i<2?v:(+v).toExponential(7)).join(','))).join('\n');const blob=new Blob([csv],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='brsr_'+state.wf+'_row'+d.row+'_pass'+state.pass+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+
+/* ---- hover, cursor, brush ---- */
+function tipHTML(n){const d=record(),r=restored(),L=[];L.push('<span class="k">n</span> '+n+'   <span class="k">t</span> '+(n/100).toFixed(2)+' µs');L.push('<span class="k">clean   </span> I '+fmt(d.clean[0][n],3)+'  Q '+fmt(d.clean[1][n],3));L.push('<span class="k">received</span> I '+fmt(current[0][n],3)+'  Q '+fmt(current[1][n],3));if(showRestored())L.push('<span class="k">restored</span> I '+fmt(r[0][n],3)+'  Q '+fmt(r[1][n],3));names.forEach((nm,k)=>{if(state.enabled[k])L.push('<span class="k">'+LABEL[nm].padEnd(8).slice(0,8)+'</span> I '+fmt(d[keys[k]][0][n],3)+'  Q '+fmt(d[keys[k]][1][n],3));});return L.join('\n');}
+function placeTip(tip,canvas,px,py,html){tip.innerHTML=html;tip.classList.add('on');const w=canvas.clientWidth,tw=tip.offsetWidth,th=tip.offsetHeight;let x=px+14,y=py-th-10;if(x+tw>w-4)x=px-tw-14;x=Math.max(4,Math.min(x,w-tw-4));if(y<0)y=py+16;tip.style.left=x+'px';tip.style.top=y+'px';}
+function sampleAt(canvas,px){const [n0,n1]=state.range,pw=canvas.clientWidth-M.l-M.r;return Math.max(n0,Math.min(n1-1,Math.round(n0+(px-M.l)/pw*(n1-n0-1))));}
+const TIME_TIPS={cleanTimePlot:'tipCleanTime',timePlot:'tipTime',restTimePlot:'tipRestTime',resTimePlot:'tipResTime'};
+Object.keys(TIME_TIPS).forEach(id=>{const c=$(id),tip=$(TIME_TIPS[id]);let drag=null;
+  const hideOthers=()=>Object.values(TIME_TIPS).forEach(t=>{if(t!==TIME_TIPS[id])$(t).classList.remove('on');});
+  c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;if(drag!==null){state.brush=[drag,px];drawTime();return;}if(px<M.l||px>r.width-M.r){leave();return;}const n=sampleAt(c,px);state.hover=n;drawTime();placeTip(tip,c,px,py,tipHTML(n));hideOthers();});
+  function leave(){state.hover=null;tip.classList.remove('on');drawTime();}
+  c.addEventListener('pointerleave',()=>{if(drag===null)leave();});
+  c.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')return;const r=c.getBoundingClientRect();drag=e.clientX-r.left;c.setPointerCapture(e.pointerId);});
+  c.addEventListener('pointerup',e=>{if(drag===null)return;const r=c.getBoundingClientRect(),px=e.clientX-r.left,a=sampleAt(c,Math.min(drag,px)),b=sampleAt(c,Math.max(drag,px));drag=null;state.brush=null;if(b-a>=16)setRange(a,b+1,null);else drawTime();});
+  c.addEventListener('pointercancel',()=>{drag=null;state.brush=null;leave();});
+  c.addEventListener('dblclick',()=>setRange(0,state.preset,state.preset));
+  c.addEventListener('keydown',e=>{const [n0,n1]=state.range,step=e.shiftKey?10:1;let n=state.cursor===null?n0:state.cursor;if(e.key==='ArrowRight'){n=Math.min(n1-1,n+step);}else if(e.key==='ArrowLeft'){n=Math.max(n0,n-step);}else if(e.key==='Home'){n=n0;}else if(e.key==='End'){n=n1-1;}else if(e.key==='Escape'){e.preventDefault();clearReadouts();drawTime();return;}else return;e.preventDefault();state.hover=null;state.cursor=n;drawTime();$('cursorReadout').textContent=tipHTML(n).replace(/<[^>]+>/g,'');const pw=c.clientWidth-M.l-M.r,px=M.l+pw*(n-n0)/Math.max(1,n1-n0-1);placeTip(tip,c,px,c.clientHeight/2,tipHTML(n));hideOthers();});
+  c.addEventListener('blur',()=>{tip.classList.remove('on');});
+});
+const SPEC_TIPS={cleanSpectrum:['tipCleanSpec',()=>cleanSpec],spectrum:['tipSpec',()=>currentSpec],restSpectrum:['tipRestSpec',()=>restSpec],swipeSpectrum:['tipSwipe',()=>null]};
+Object.keys(SPEC_TIPS).forEach(id=>{const c=$(id),[tipId,getS]=SPEC_TIPS[id],tip=$(tipId);
+  c.addEventListener('pointermove',e=>{const g=specGeom[id];if(!g)return;const r=c.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top,pw=r.width-M.l-M.r,ph=r.height-M.t-M.b;let S=getS(),side='';if(!S){const isRx=px<M.l+pw*state.swipe;S=isRx?currentSpec:restSpec;side=isRx?'received':'restored';}const n=(px-M.l)/pw*1024,fi=Math.round((n-(STFT.win-1)/2)/STFT.hop);const row=Math.floor((py-M.t)/ph*STFT.win);if(fi<0||fi>=S.length||row<0||row>=STFT.win){state.specHover=null;tip.classList.remove('on');drawSpec();return;}const bin=(STFT.win-1-row+STFT.win/2)%STFT.win,f=(bin<32?bin:bin-64)*DATA.fs/64/1e6,v=S[fi][bin]-cleanPeak,cw=pw*STFT.hop/1024,chh=ph/STFT.win;state.specHover={id,x:M.l+pw*((fi*STFT.hop+(STFT.win-1)/2-STFT.hop/2)/1024),y:M.t+row*chh,cw,ch:chh};drawSpec();placeTip(tip,c,px,py,(side?'<span class="k">'+side+'</span>\n':'')+'<span class="k">t</span> '+((fi*STFT.hop+(STFT.win-1)/2)/100).toFixed(3)+' µs   <span class="k">f</span> '+fmt(f,1)+' MHz\n<span class="k">level</span> '+fmt(v,1)+' dB re clean peak'+(v<-40?' (colour floor −40 dB)':v>0?' (colour ceiling 0 dB)':''));});
+  c.addEventListener('pointerleave',()=>{state.specHover=null;tip.classList.remove('on');drawSpec();});
+});
+$('swipe').addEventListener('input',e=>{state.swipe=+e.target.value/100;drawSpec();});
+function setRange(a,b,preset){state.range=[a,b];state.preset=preset||state.preset;clearReadouts();announce();$$('[data-range]').forEach(x=>x.setAttribute('aria-pressed',String(preset!==null&&+x.dataset.range===preset)));setPlotLimit();drawTime();drawSpec();if($('tableDetails').open)renderTable();}
+
+/* ---- controls ---- */
+$('chips').innerHTML=CLASSES.map(n=>'<button type="button" data-wf="'+n+'" aria-pressed="false">'+n+'</button>').join('');
+$$('[data-wf]').forEach(b=>b.addEventListener('click',()=>setWaveform(b.dataset.wf,true)));
+$$('[data-stage]').forEach(b=>b.addEventListener('click',()=>{state.waiting=false;state.playing=false;setStage(+b.dataset.stage);}));
+$$('[data-pass]').forEach(b=>b.addEventListener('click',()=>{state.pass=+b.dataset.pass;setPlotLimit();update();}));
+$('play').addEventListener('click',()=>{state.waiting=false;if(!state.playing&&state.stage===STAGES-1)setStage(0);state.playing=!state.playing;update();});
+$('restart').addEventListener('click',()=>{state.waiting=false;state.playing=true;setStage(0);});
+$('nextSample').addEventListener('click',()=>{state.sample=(state.sample+1)%DATA.records[state.wf].length;setWaveform(state.wf,true);});
+$('channel').addEventListener('change',e=>{state.channel=+e.target.value;clearReadouts();setPlotLimit();drawTime();announce();});
+$$('[data-range]').forEach(b=>b.addEventListener('click',()=>setRange(0,+b.dataset.range,+b.dataset.range)));
+$$('[data-inspect],[data-node]').forEach(b=>{const inspect=()=>{state.inspect=b.dataset.inspect||b.dataset.node;updateDiagram();drawTime();};b.addEventListener('click',inspect);if(b.tagName.toLowerCase()==='g')b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inspect();}});});
+$('loop').addEventListener('click',()=>{state.loop=!state.loop;syncPlay();});
+$('railToggle').addEventListener('click',()=>{const r=$('rail'),open=r.classList.toggle('collapsed');$('railToggle').setAttribute('aria-expanded',String(!open));document.body.classList.toggle('rail-open',!open&&innerWidth<=980);});
+function railInit(){if(innerWidth<=980){$('rail').classList.add('collapsed');$('railToggle').setAttribute('aria-expanded','false');document.body.classList.remove('rail-open');}else{$('rail').classList.remove('collapsed');$('railToggle').setAttribute('aria-expanded','true');document.body.classList.remove('rail-open');}}
+railInit();window.addEventListener('resize',railInit);
+function motionPreferenceChanged(){if(reduced.matches){state.waiting=false;state.loop=false;state.playing=false;setStage(STAGES-1);}syncPlay();}
+if(reduced.addEventListener)reduced.addEventListener('change',motionPreferenceChanged);else if(reduced.addListener)reduced.addListener(motionPreferenceChanged);
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{drawTime();drawSpec();}).observe($('chartgrid'));else window.addEventListener('resize',()=>{drawTime();drawSpec();});
+
+/* ---- animation loop ---- */
+const motionNames=['Clean','Echo','Cci','Noise','Rx','Rest'],lengths={};
+function frame(now){
+  let dt=Math.min(.1,(now-last)/1000);last=now;
+  if(state.playing&&!document.hidden){
+    state.t+=dt;
+    if(state.t>=T_END){
+      if(state.loop){setStage(0);}else{state.t=T_END;state.playing=false;update();}
+    }else{
+      let next=stageAt(state.t);
+      if(next!==state.stage){let t=state.t;setStage(next);state.t=t;}
+    }
+    progress();
+    if(!reduced.matches&&sceneVisible){
+      elapsed+=dt;
+      const svgs=Array.from(document.querySelectorAll('.scene svg')).filter(s=>s.getClientRects().length);
+      for(const svg of svgs)motionNames.forEach((n,k)=>{
+        try{
+          const path=svg.querySelector('[data-wire="'+n+'"]'),dot=svg.querySelector('[data-particle="'+n+'"]');
+          if(!path||!dot)return;
+          const key=svg.className.baseVal+n,length=lengths[key]||(lengths[key]=path.getTotalLength());
+          const stageStart=STAGE_START[k<4?k:4],local=Math.max(0,state.t-stageStart);
+          const p=path.getPointAtLength(((elapsed*.24+k*.19)%1)*length);
+          dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);
+          const active=k===0||(k<4?state.enabled[k-1]:state.stage>=4),hi=state.inspect==='All'||state.inspect===n||(k>=4&&(state.inspect==='Restored'||state.inspect==='Model'));
+          dot.style.opacity=active&&local>0&&hi?'1':'0';
+        }catch(error){}
       });
-      lastStage = stage;
     }
-    var cap = captionFor(stage, D);
-    if (cap !== lastCaption) { $("caption").textContent = cap; lastCaption = cap; }
   }
-
-  // ---- controls
-  function setPaused(p) {
-    state.paused = p;
-    $("playLabel").textContent = p ? "Play" : "Pause";
-    $("icoPause").style.display = p ? "none" : "";
-    $("icoPlay").style.display = p ? "" : "none";
-  }
-  $("play").addEventListener("click", function () { setPaused(!state.paused); });
-  $("restart").addEventListener("click", function () { state.t = 0; setPaused(false); render(); });
-  wfBtns.forEach(function (b) { b.addEventListener("click", function () { setWaveform(b.dataset.wf); }); });
-  stepBtns.forEach(function (b, k) { b.addEventListener("click", function () { state.t = STARTS[k]; render(); }); });
-
-  // ---- fit the whole board (and the footer links) in the window, width and height, without scrolling
-  function fit() {
-    var s = 1;
-    if (!document.body.classList.contains("record")) {
-      var footH = document.querySelector("footer").offsetHeight;
-      var availW = document.documentElement.clientWidth - 32, availH = window.innerHeight - footH - 12 - 8 - 12;
-      s = Math.max(0.2, Math.min(1.5, availW / 1440, availH / 900));
-    }
-    $("board").style.transform = "scale(" + s + ")";
-    $("fit").style.width = 1440 * s + "px";
-    $("fit").style.height = 900 * s + "px";
-  }
-  window.addEventListener("resize", fit);
-  fit();
-
-  // ---- animation loop
-  var last = performance.now();
-  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function tick(now) {
-    var dt = Math.min(0.1, (now - last) / 1000);
-    last = now;
-    if (!state.paused && !state.frozen) {
-      state.t += dt * state.speed;
-      if (state.t >= T_END) state.t = 0;
-      render();
-    }
-    requestAnimationFrame(tick);
-  }
-  setWaveform(state.wf);
-  if (reduce) { state.t = 15; setPaused(true); render(); }
-  requestAnimationFrame(tick);
-
-  // hook used by scripts/record_restoration_gif.py
-  window.brsrEnv = { setTime: function (t) { state.t = t; render(); }, freeze: function () { state.frozen = true; }, setWaveform: setWaveform, duration: T_END };
-})();
+  requestAnimationFrame(frame);
+}
+if(reduced.matches){state.stage=STAGES-1;state.enabled=[true,true,true];state.t=T_END;}
+setWaveform('LFM',false);progress();
+$('bootNotice').hidden=true;
+if(typeof IntersectionObserver!=='undefined'){
+  new IntersectionObserver(entries=>{sceneVisible=entries[0].isIntersecting;if(sceneVisible&&state.waiting){state.waiting=false;state.playing=true;update();}syncPlay();},{threshold:.35}).observe(document.querySelector('.scene'));
+}else if(state.waiting){state.waiting=false;state.playing=true;update();}
+document.addEventListener('visibilitychange',()=>{last=performance.now();syncPlay();});
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>

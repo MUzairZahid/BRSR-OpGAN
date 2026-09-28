@@ -8,17 +8,34 @@
 Official PyTorch implementation of **BRSR-OpGAN** (Neural Networks 190, 2025, 107709) and home of the **BRSR dataset**, the Blind Radar Signal Restoration benchmark. BRSR-OpGAN restores radar signals corrupted by an unknown blend of **additive white Gaussian noise (AWGN)**, **echo** and **co-channel interference (CCI)**. It makes no assumption about the type or severity of the corruption (blind restoration). It is a 1D **Operational GAN** built from **Self-Organized Operational Neural Network (Self-ONN)** layers and trained with a **dual-domain (time + frequency) loss**.
 
 <p align="center">
-  <a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html"><img src="docs/figures/brsr_restoration.gif" width="900" alt="A real BRSR test signal (LFM): an emitter sends a clean radar pulse, a building adds a delayed echo, a second emitter adds co-channel interference and the receiver adds noise; BRSR-OpGAN then restores the received signal from -0.1 dB to 21.1 dB SNR"></a>
+  <a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_hero_dark.png">
+      <img src="docs/figures/restoration/restoration_hero_light.png" width="960" alt="Restoration Observatory: a radar transmitter, an illustrative reflector, an interferer and receiver noise feed one receiver; the received signal passes through the BRSR-OpGAN-D-2P restorer to the restored output. A panel lists the test row, its target and input SNR, echo delay, interference signal and artifact power fractions, and the restorer card shows the SNR before and after restoration.">
+    </picture>
+  </a>
 </p>
-<p align="center"><em>A real BRSR test signal (LFM, test row 19903). The stored echo, co-channel interference and AWGN components arrive at the receiver, and BRSR-OpGAN-D-2P restores the received signal from −0.1 dB to 21.1 dB SNR. This is one of the best-restored test signals; average results are in the tables below.</em><br>
-<strong><a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">Open the interactive version</a></strong>: pick another test signal (LFM, BPSK, Frank, T4), pause, or jump to any stage.</p>
+<p align="center"><strong><a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">Open the interactive Restoration Observatory →</a></strong></p>
+
+A released BRSR test signal, corrupted by its stored echo, co-channel interference and AWGN, and restored by the released BRSR-OpGAN-D-2P weights. The page holds **36 test rows** (all 12 waveform classes × three input-SNR bands around +4, −2 and −10 dB, each with all three artifacts) and shows the model's real outputs after the first and the second pass. Reveal the components stage by stage, then compare **clean, received and restored** waveforms and spectrograms with matched axes, the **residual error**, and a before/after spectrogram divider; hover or use the keyboard for sample values, and export any row as CSV.
+
+<p align="center">
+  <a href="https://muzairzahid.github.io/BRSR-OpGAN/brsr_restoration.html">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/figures/restoration/restoration_compare_dark.png">
+      <img src="docs/figures/restoration/restoration_compare_light.png" width="960" alt="Four matched plots of one LFM test row: clean target, received input, restored output over the dashed clean target, and the residual error of received and restored, each with a spectrogram; the last panel splits received and restored spectrograms at a movable divider.">
+    </picture>
+  </a>
+</p>
+
+The page follows the same design as the generator chapter, [BRSR-DataGen's Signal Observatory](https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html), with one colour code for both: **clean** blue (solid; dashed when it is the reference), **echo** green (dashed), **co-channel interference** orange (dash-dot), **AWGN** neutral grey (dotted), **received** in ink, **restored** blue and the **residual** red. The two pages do not show the same signal: the generator page shows newly seeded generator output, this page shows released test rows. SNR values follow the paper's evaluation protocol; every embedded output is checked against `reference_results/` when the page is built.
 
 This repository provides:
 
 - the **BRSR dataset** download (85,800 paired clean/corrupted radar signals, 12 LPI radar waveform classes; hosted on Zenodo);
-- **pre-trained models**: BRSR-OpGAN (time, dual-domain, 2-pass) and CNN-GAN baselines, for both the BRSR and the AWGN-Baseline dataset;
+- **pre-trained models**: BRSR-OpGAN (time, dual-domain, 2-pass) and CNN-GAN baselines trained on the BRSR dataset;
 - **training and evaluation code** that reproduces the paper's results, plus reference results per SNR bin, artifact type and modulation class;
-- the **data generator** (MATLAB and Python) lives in its own repository: [BRSR-DataGen](https://github.com/MUzairZahid/BRSR-DataGen). See how a BRSR sample is made in the [interactive radar environment](https://muzairzahid.github.io/BRSR-DataGen/radar_environment.html).
+- the **data generator** (MATLAB and Python) lives in its own repository: [BRSR-DataGen](https://github.com/MUzairZahid/BRSR-DataGen). See how a BRSR sample is made in its [interactive Signal Observatory](https://muzairzahid.github.io/BRSR-DataGen/signal_observatory.html).
 
 The same dataset is used by the follow-up work **CoRe-Net** (see [Related work](#related-work)).
 
@@ -65,13 +82,23 @@ python train.py --dataset brsr --Q 3 --first_pass pretrained_weights/brsr/BRSR_O
 python evaluate.py --dataset brsr --checkpoint runs/<run>/generator_best.pth --q 3
 ```
 
-The README animation is a recording of the interactive page: `python scripts/make_restoration_page.py`, then `python scripts/record_restoration_gif.py` (needs `matplotlib`, `playwright` and `ffmpeg`). The static figures are made with `python scripts/make_demo_figures.py`.
+To rebuild the interactive page and the README figures:
+
+```bash
+python scripts/export_restoration_samples.py   # test rows + model outputs -> scripts/restoration_samples.npz (needs data + PyTorch)
+python scripts/make_restoration_page.py        # docs/brsr_restoration.html (NumPy only)
+python scripts/make_demo_figures.py            # docs/figures/*_{light,dark}.png (matplotlib)
+python scripts/capture_restoration_page.py     # hero and social-card images (Playwright)
+python -m pytest -q tests                      # checks the embedded data against reference_results/
+```
+
+Colours, fonts and line styles come from [`scripts/brsr_palette.py`](scripts/brsr_palette.py), a copy of the file of the same name in BRSR-DataGen.
 
 Paper settings: Adam, learning rate 5·10⁻⁴, batch size 64, up to 1000 epochs, Q = 3; the model with the best validation SNR is kept.
 
 ## Pre-trained models and results
 
-`pretrained_weights/brsr/` and `pretrained_weights/awgn_baseline/` contain the generators used in the paper, with their original training logs. `python evaluate.py` reproduces the numbers below; full results by SNR bin, artifact composition and modulation class are in [`reference_results/`](reference_results).
+`pretrained_weights/brsr/` contains the generators used in the paper, with their original training logs. `python evaluate.py` reproduces the numbers below; full results by SNR bin, artifact composition and modulation class are in [`reference_results/`](reference_results).
 
 **BRSR dataset, test split (23,400 signals):**
 
@@ -84,22 +111,13 @@ Paper settings: Adam, learning rate 5·10⁻⁴, batch size 64, up to 1000 epoch
 | BRSR-OpGAN-D | 10.33 | 16.46 | 0.32 | 8.78 |
 | **BRSR-OpGAN-D-2P** | **12.36** | **18.49** | **0.23** | **10.93** |
 
-**AWGN-Baseline, test split, restored SNR (dB) at selected input SNRs:**
-
-| Model | −14 dB | −8 dB | −2 dB | 4 dB | 10 dB |
-|---|---|---|---|---|---|
-| CNN-GAN-T | 1.29 | 6.00 | 11.36 | 15.71 | 18.64 |
-| CNN-GAN-D | 1.39 | 6.07 | 11.31 | 15.62 | 18.59 |
-| BRSR-OpGAN-T | 1.28 | 6.74 | 12.16 | 16.47 | 19.43 |
-| BRSR-OpGAN-D | 1.22 | 6.68 | 12.11 | 16.47 | 19.49 |
-
-<p align="center"><img src="docs/figures/snr_sweep.png" width="900" alt="One LFM test signal re-scaled to input SNRs from -12 to +6 dB and restored by BRSR-OpGAN"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/figures/snr_sweep_dark.png"><img src="docs/figures/snr_sweep_light.png" width="900" alt="One LFM test signal re-scaled to input SNRs from -12 to +6 dB and restored by BRSR-OpGAN"></picture></p>
 <p align="center"><em>One LFM test signal with its own echo + interference + noise mix, re-scaled to different input SNRs and restored by BRSR-OpGAN-D-2P.</em></p>
 
-<p align="center"><img src="docs/figures/two_pass.png" width="900" alt="Received, first-pass and second-pass restoration of a Costas test signal"></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/figures/two_pass_dark.png"><img src="docs/figures/two_pass_light.png" width="900" alt="Received, first-pass and second-pass restoration of a Costas test signal"></picture></p>
 <p align="center"><em>The second restoration pass (BRSR-OpGAN-D-2P) on a Costas test signal.</em></p>
 
-T = time-domain loss, D = dual-domain loss, 2P = second restoration pass. SNR, PSNR and MSE follow the paper's evaluation protocol. \*SI-SDR is an additional, scale-invariant metric (see below). The BRSR numbers match Tables 2 and 3 of the paper to within 0.04 dB. The AWGN-Baseline checkpoints differ from Table 1 of the paper by at most 0.09 dB.
+T = time-domain loss, D = dual-domain loss, 2P = second restoration pass. SNR, PSNR and MSE follow the paper's evaluation protocol. \*SI-SDR is an additional, scale-invariant metric (see below). The numbers match Tables 2 and 3 of the paper to within 0.04 dB.
 
 ## Evaluation protocol
 
@@ -116,10 +134,11 @@ BRSR-OpGAN/
 ├── train.py               # training (incl. 2nd pass)
 ├── evaluate.py            # evaluation and grouped results
 ├── download_data.py       # BRSR dataset download from Zenodo with checksum check
-├── scripts/               # interactive restoration page, README animation and figures
+├── scripts/               # interactive page (export_restoration_samples, make_restoration_page), figures, palette
+├── tests/                 # the embedded page data vs. reference_results, and the page's own maths
 ├── pretrained_weights/    # released generators (+ original training logs)
 ├── reference_results/     # test results of the released generators
-└── docs/                  # evaluation protocol, interactive page (GitHub Pages), figures
+└── docs/                  # evaluation protocol, interactive page (GitHub Pages), figures, fonts
 ```
 
 ## Related work

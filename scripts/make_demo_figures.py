@@ -5,8 +5,8 @@ Uses real BRSR test signals and the released BRSR-OpGAN weights:
     python download_data.py --dataset brsr --splits test
     python scripts/make_demo_figures.py
 
-Outputs go to docs/figures/. Requires matplotlib.
-The README animation is made by make_restoration_page.py and record_restoration_gif.py.
+Outputs go to docs/figures/ in light and dark mode (snr_sweep_{light,dark}.png, two_pass_{light,dark}.png).
+Requires matplotlib. The interactive page is built by export_restoration_samples.py + make_restoration_page.py.
 
 All displayed signals are min-max normalized per channel, i.e. what the network sees.
 SNR values follow the paper's evaluation protocol (docs/EVALUATION_PROTOCOL.md).
@@ -21,9 +21,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib.colors import LinearSegmentedColormap
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 from data import CLASS_NAMES  # noqa: E402
 from models import ResidualGenerator  # noqa: E402
@@ -34,14 +34,26 @@ FS = 100e6
 WIN = slice(0, 128)                        # default time window (1.28 us)
 WIN_STATIC = slice(0, 80)                  # samples shown in the static figures (0.8 us)
 
-# Palette (validated: CVD- and normal-vision-safe; restored/aqua is always direct-labelled)
-SURFACE, INK, INK2, MUTED, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8983", "#e6e5e0"
-C_CLEAN, C_CORRUPT, C_RESTORED = "#2a78d6", "#eb6834", "#1baf7a"
-SPEC_CMAP = LinearSegmentedColormap.from_list("blue_seq", ["#fcfcfb", "#cde2fb", "#6da7ec", "#2a78d6", "#184f95", "#0d366b"])
+# Colours come from the shared design system (scripts/brsr_palette.py, a copy of BRSR-DataGen's):
+# clean blue (dashed when it is the reference), received ink, restored blue solid. Figures are made in
+# light and dark mode; the README picks one with <picture>.
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location("brsr_palette", os.path.join(HERE, "brsr_palette.py"))
+palette = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(palette)
+SURFACE = INK = INK2 = MUTED = GRID = C_CLEAN = C_CORRUPT = C_RESTORED = None
 
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "axes.edgecolor": GRID, "axes.labelcolor": INK2,
-                     "xtick.color": INK2, "ytick.color": INK2, "axes.titlecolor": INK, "figure.facecolor": SURFACE,
-                     "axes.facecolor": SURFACE, "savefig.facecolor": SURFACE})
+
+def apply_theme(theme):
+    """Set the module colours and matplotlib defaults for one theme."""
+    global SURFACE, INK, INK2, MUTED, GRID, C_CLEAN, C_CORRUPT, C_RESTORED
+    t = palette.THEMES[theme]
+    SURFACE, INK, INK2, MUTED, GRID = t["surface"], t["ink"], t["ink2"], t["muted"], t["grid"]
+    C_CLEAN, C_CORRUPT, C_RESTORED = t["clean"], t["received"], t["restored"]
+    plt.rcParams.update(palette.matplotlib_rc(theme))
+
+
+apply_theme("light")
 
 
 # ---------------------------------------------------------------- helpers
@@ -194,8 +206,10 @@ def main():
     for i in range(len(rows)):
         print(f"row {rows[i]}: input {snr_in[i]:.2f} dB -> restored {snr_out[i]:.2f} dB")
 
-    make_snr_sweep(models, d, 0, os.path.join(args.out_dir, "snr_sweep.png"))
-    make_two_pass(models, d, 1, os.path.join(args.out_dir, "two_pass.png"))
+    for theme in ("light", "dark"):
+        apply_theme(theme)
+        make_snr_sweep(models, d, 0, os.path.join(args.out_dir, f"snr_sweep_{theme}.png"))
+        make_two_pass(models, d, 1, os.path.join(args.out_dir, f"two_pass_{theme}.png"))
     print(f"Saved figures to {args.out_dir}")
 
 
